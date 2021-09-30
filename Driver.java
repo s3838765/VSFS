@@ -32,6 +32,7 @@ public class Driver {
                break;
             case "index":
                System.out.println("index command selected");
+               func.index();
                break;
             default:
                System.out.println("The command you entered was not valid");
