@@ -7,33 +7,29 @@ import java.util.Scanner;
 
 public class Functions {
 
+   /**
+    * Iteratively call the listFile function on every file and directory in the file system
+    */
    public void list() {
-      try {
-         Scanner scanner = new Scanner(FileSystem.fs);
-         String nextLine;
-
-         // scan through every line of the file
-         while (scanner.hasNextLine()) {
-            nextLine = scanner.nextLine();
-            // file
-            if (nextLine.startsWith("@")) {
-               listFile(false, nextLine.substring(1));
-            // directory
-            } else if (nextLine.startsWith("=")) {
-               listFile(true, nextLine.substring(1));
-            }
+      FileSystem.allFiles.forEach(internalFile -> {
+         try {
+            listFile(internalFile);
+         } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println(e);
          }
-
-      } catch (IOException e) {
-         e.printStackTrace();
-      } catch (Exception e) {
-         e.printStackTrace();
-      }
+      });
    }
 
-   private void listFile(boolean isDir, String fileName) throws IOException {
+   /**
+    * List the attributes of a single file within the internal file system
+    *
+    * @param intFile an internal file stored by the FileSystem class
+    * @throws IOException
+    */
+   private void listFile(InternalFile intFile) throws IOException {
       System.out.printf("%s%s %d %s %s %d %s %s%n",
-         isDir ? "d" : "-",
+         intFile.isDir ? "d" : "-",
          PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
          Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
          // Files.getAttribute(FSUtil.fs.toPath(), "unix:uid"),
@@ -42,13 +38,22 @@ public class Functions {
          Files.getAttribute(FileSystem.fs.toPath(), "unix:gid"),
          Files.getAttribute(FileSystem.fs.toPath(), "size"),
          new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
-         fileName);
+         intFile.name);
    }
 
+   /**
+    *
+    * @param extFileName
+    * @param intFileName
+    */
    public void copyIn(String extFileName, String intFileName) {
       try {
+         // convert the external file into a File object and then create an InternalFile from it
          File extFile = new File(extFileName);
          InternalFile intFile = new InternalFile(extFile, intFileName);
+
+         // if the file (name) does not exist, add it to the system
+         // this allows you to copy an external file into the internal file system with an alternate name
          if (!FileSystem.fileExists(intFileName)) {
             intFile.addToFileSystem();
          } else {

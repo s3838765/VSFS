@@ -37,15 +37,10 @@ public class FileSystem {
          }
 
          // iterate the file system and convert all data to java objects for easy access
-         // iterate the file and add each file and directory to arraylist
-         // read each line until we reach @
          String nextLine = sc.hasNextLine() ? sc.nextLine() : "";
-
          do {
             // read a single file
             if (nextLine.startsWith(Symbol.FILE)) {
-//               System.out.println("---------------");
-//               System.out.println("Reading new file" + nextLine);
                // title of the file
                String currFileName = nextLine.substring(1);
                ArrayList<String> currFileData = new ArrayList<>();
@@ -53,37 +48,36 @@ public class FileSystem {
                // iterate through data of current file
                while (sc.hasNextLine()) {
                   nextLine = sc.nextLine();
-//                  System.out.println("nextLine = " + nextLine);
                   // ensure all lines are data
                   if (nextLine.startsWith(Symbol.DATA)) {
-//                     System.out.println("The next line has data in it");
                      currFileData.add(nextLine);
                   // once a line other than data is reached, exit the loop
                   } else {
                      break;
                   }
                }
+               // add the file to allFiles to keep track of it
                allFiles.add(new InternalFile(currFileName, currFileData));
-               System.out.println(currFileName + " added to allFiles");
+            // read a directory
             } else if (nextLine.startsWith(Symbol.DIR)) {
+               // ensure the directory ends with "/"
                if (nextLine.endsWith("/")) {
                   String currDirName = nextLine.substring(1);
                   allFiles.add(new InternalFile(currDirName));
+               // if the directory does not end with a "/", consider it incorrectly formatted
                } else {
                   System.out.println("This directory is not correctly formatted. (must end with a \"/\")");
                }
-//               String currDirName = nextLine.substring(1, nextLine.indexOf("/"));
-//               sc.next("/");
                nextLine = sc.nextLine();
-
+            // handle comments/ignored lines (beginning with "#")
             } else if (nextLine.startsWith(Symbol.IGNORE)) {
                System.out.println("A line was ignored by the compiler");
                nextLine = sc.nextLine();
+            // handle extraneous values
             } else {
                System.out.println("An unknown file type was found by the compiler.");
                nextLine = sc.nextLine();
             }
-
          } while (sc.hasNextLine());
 
 //         System.out.println("OUTSIDE WHILE LOOP");
@@ -94,18 +88,6 @@ public class FileSystem {
 //            System.out.println(file.data);
 //            System.out.println("---------------------------------");
 //         });
-
-
-
-         // iterate through each line and add each file and directory to respective arraylist
-//         while (sc.hasNextLine()) {
-//            String nextLine = sc.nextLine();
-//            if (nextLine.startsWith("@")) {
-//               allFiles.add(nextLine.substring(1));
-//            } else if (nextLine.startsWith("=")) {
-//               allDirs.add(nextLine.substring(1));
-//            }
-//         }
 
          // prepare file system for being written/appended to
          out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getName(), true)));
@@ -119,6 +101,11 @@ public class FileSystem {
       }
    }
 
+   /**
+    * Check the existence of a given internal file based on the name of it
+    * @param fileName name of the file to check
+    * @return true if the file exists within the internal file system, false otherwise
+    */
    public static boolean fileExists(String fileName) {
       for (InternalFile file : allFiles) {
          if (file.name.equals(fileName)) {
@@ -128,6 +115,9 @@ public class FileSystem {
       return false;
    }
 
+   /**
+    * Clean up the file system variables by closing the PrintWriter and Scanner
+    */
    public static void closeFS() {
       try {
          out.close();
@@ -137,10 +127,18 @@ public class FileSystem {
       }
    }
 
+   /**
+    * Append to the file system notes file with no newline
+    * @param text text to be appended to the file system
+    */
    public static void writeToFile(String text) {
       out.print(text);
    }
 
+   /**
+    * Append to the file system notes file with a newline
+    * @param text text to be appended to the file system
+    */
    public static void writeLineToFile(String text) {
       out.println(text);
    }
