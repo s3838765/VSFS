@@ -17,6 +17,9 @@ public class Driver {
             System.exit(1);
          }
       }
+//      FileSystem.allFiles.forEach(f -> {
+//         f.printFile();
+//      });
 
       if (args.length == 2) {
          switch (args[0].toLowerCase()) {
@@ -43,6 +46,7 @@ public class Driver {
                break;
             case "mkdir":
                System.out.println("mkdir command selected");
+               func.mkDir(args[2]);
                break;
             default:
                System.out.println("The command you entered was not valid");
@@ -55,6 +59,7 @@ public class Driver {
                break;
             case "copyout":
                System.out.println("copyout command selected");
+               func.copyOut(args[2], args[3]);
                break;
             default:
                System.out.println("The command you entered was not valid");

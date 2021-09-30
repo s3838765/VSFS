@@ -70,4 +70,17 @@ public class InternalFile {
    public void removeFileFromSystem() {
 
    }
+
+   public void printFile() {
+      System.out.println("--------------------------");
+      if (this.isDir) {
+         System.out.println("Dirname: " + this.name);
+      } else {
+         System.out.println("Filename: " + this.name);
+         for (String s : this.data) {
+            System.out.println(s);
+         }
+      }
+      System.out.println("--------------------------");
+   }
 }

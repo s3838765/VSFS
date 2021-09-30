@@ -1,9 +1,7 @@
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
-import java.util.Scanner;
 
 public class Functions {
 
@@ -23,7 +21,6 @@ public class Functions {
 
    /**
     * List the attributes of a single file within the internal file system
-    *
     * @param intFile an internal file stored by the FileSystem class
     * @throws IOException
     */
@@ -63,6 +60,57 @@ public class Functions {
          e.printStackTrace();
       }
 
+   }
+
+   public void copyOut(String intFileName, String extFileName) {
+      try {
+         System.out.println("Copying file " + intFileName + " to " + extFileName);
+
+         InternalFile intFile = FileSystem.getFile(intFileName);
+         File extFile = new File(extFileName);
+         if (intFile.isDir) {
+            // TODO: recursively copy directories
+            if (extFile.mkdir()) {
+               System.out.println("Successfully created directory " + intFileName);
+            } else {
+               System.out.println("Could not create directory " + intFileName);
+            }
+         } else {
+            // create file on external system using given file name
+            // initialise writer for external file
+            PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, true)));
+            // iterate each line of data from the file and print it to the external file
+            FileSystem.getFile(intFileName).data.forEach(dataLine -> {
+               extWriter.println(dataLine);
+            });
+            // close the writer
+            extWriter.close();
+         }
+
+
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+   }
+
+   /**
+    * Creates an empty internal directory in the internal file system
+    * @param dirName name of the directory you would like to create
+    */
+   public void mkDir(String dirName) {
+      // add "/" to directory if it does not contain it
+      if (!dirName.endsWith("/")) {
+         dirName += "/";
+      }
+      System.out.println("dirName: " + dirName);
+      System.out.println("exists: " + FileSystem.fileExists(dirName));
+      if (!FileSystem.fileExists(dirName)) {
+         FileSystem.writeLineToFile(Symbol.DIR + dirName);
+         FileSystem.allFiles.add(new InternalFile(dirName));
+         System.out.println("Adding " + dirName + " to internal file system.");
+      } else {
+         System.out.println("Cannot add " + dirName + " to file system. (already exists)");
+      }
    }
 
    public void rm(String fileName) {

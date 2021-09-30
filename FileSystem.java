@@ -9,12 +9,11 @@ import java.util.Scanner;
 public class FileSystem {
    public static File fs;
    private static PrintWriter out = null;
-   private static Scanner sc = null;
+   private static PeekableScanner sc = null;
    public static ArrayList<InternalFile> allFiles;
 
    /**
     * Initialises file system by loading given .notes file from file name
-    *
     * @param fileName name of file in which to load the file system from
     */
    public static void initialiseFS(String fileName) {
@@ -30,15 +29,43 @@ public class FileSystem {
          }
 
          // set up scanner for given file system
-         sc = new Scanner(fileSystem);
+         sc = new PeekableScanner(fileSystem);
          // ensure first line is the correct format (otherwise terminate)
          if (!sc.nextLine().equals("NOTES V1.0")) {
             throw new FileSystemException("File system format is incorrect. It should begin with \"NOTES V1.0\". Terminating program.");
          }
 
-         // iterate the file system and convert all data to java objects for easy access
-         String nextLine = sc.hasNextLine() ? sc.nextLine() : "";
-         do {
+         initialiseInternalFiles();
+
+
+         System.out.println("OUTSIDE WHILE LOOP");
+         allFiles.forEach((file) -> {
+            System.out.println("PRINTING NEW FILE ---------------");
+            System.out.println(file.name);
+            System.out.println(file.isDir);
+            System.out.println(file.data);
+            System.out.println("---------------------------------");
+         });
+
+         // prepare file system for being written/appended to
+         out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getName(), true)));
+         fs = fileSystem;
+      } catch (Exception e) {
+         e.printStackTrace();
+         System.err.println(e.getMessage());
+      }
+   }
+
+   /**
+    * Iterate through the file system notes file and initialise all files and directories
+    */
+   private static void initialiseInternalFiles() {
+      // iterate the file system and convert all data to java objects for easy access
+      String nextLine;
+      while (sc.hasNextLine()) {
+         nextLine = sc.nextLine();
+         // if file does not already exist in the internal file system
+         if (!fileExists(nextLine.substring(1))) {
             // read a single file
             if (nextLine.startsWith(Symbol.FILE)) {
                // title of the file
@@ -46,58 +73,35 @@ public class FileSystem {
                ArrayList<String> currFileData = new ArrayList<>();
 
                // iterate through data of current file
-               while (sc.hasNextLine()) {
+               while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
                   nextLine = sc.nextLine();
-                  // ensure all lines are data
-                  if (nextLine.startsWith(Symbol.DATA)) {
-                     currFileData.add(nextLine);
-                  // once a line other than data is reached, exit the loop
-                  } else {
-                     break;
-                  }
+                  currFileData.add(nextLine);
                }
                // add the file to allFiles to keep track of it
                allFiles.add(new InternalFile(currFileName, currFileData));
+               System.out.println("Adding file " + currFileName);
             // read a directory
             } else if (nextLine.startsWith(Symbol.DIR)) {
                // ensure the directory ends with "/"
                if (nextLine.endsWith("/")) {
                   String currDirName = nextLine.substring(1);
                   allFiles.add(new InternalFile(currDirName));
+                  System.out.println("Adding dir " + currDirName);
                // if the directory does not end with a "/", consider it incorrectly formatted
                } else {
-                  System.out.println("This directory is not correctly formatted. (must end with a \"/\")");
+                  System.out.println("This directory (" + nextLine.substring(1) + ") is not correctly formatted. (must end with a \"/\")");
                }
-               nextLine = sc.nextLine();
             // handle comments/ignored lines (beginning with "#")
             } else if (nextLine.startsWith(Symbol.IGNORE)) {
                System.out.println("A line was ignored by the compiler");
-               nextLine = sc.nextLine();
             // handle extraneous values
             } else {
-               System.out.println("An unknown file type was found by the compiler.");
-               nextLine = sc.nextLine();
+               System.out.println("An unknown file type was found by the compiler. (" + nextLine.charAt(0) + ")");
             }
-         } while (sc.hasNextLine());
-
-//         System.out.println("OUTSIDE WHILE LOOP");
-//         allFiles.forEach((file) -> {
-//            System.out.println("PRINTING NEW FILE ---------------");
-//            System.out.println(file.name);
-//            System.out.println(file.isDir);
-//            System.out.println(file.data);
-//            System.out.println("---------------------------------");
-//         });
-
-         // prepare file system for being written/appended to
-         out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getName(), true)));
-         fs = fileSystem;
-      } catch (FileSystemException e) {
-         e.printStackTrace();
-         System.err.println(e.getMessage());
-      } catch (Exception e) {
-         e.printStackTrace();
-         System.err.println(e.getMessage());
+         // file already exists within the internal file system
+         } else {
+            System.out.println("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
+         }
       }
    }
 
@@ -116,12 +120,26 @@ public class FileSystem {
    }
 
    /**
+    * Get the internal file from a given name
+    * @param fileName name of the file to be retrieved
+    * @return the internal file associated with the provided file name if it exists, null if it does not exist
+    */
+   public static InternalFile getFile(String fileName) {
+      for (InternalFile file : allFiles) {
+         if (file.name.equals(fileName)) {
+            return file;
+         }
+      }
+      return null;
+   }
+
+   /**
     * Clean up the file system variables by closing the PrintWriter and Scanner
     */
    public static void closeFS() {
       try {
          out.close();
-         sc.close();
+//         sc.close();
       } catch (Exception e) {
 
       }
