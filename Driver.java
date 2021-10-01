@@ -29,6 +29,7 @@ public class Driver {
                break;
             case "defrag":
                System.out.println("defrag command selected");
+               func.defrag();
                break;
             case "index":
                System.out.println("index command selected");
@@ -41,8 +42,15 @@ public class Driver {
          switch (args[0].toLowerCase()) {
             case "rm":
                System.out.println("rm command selected");
+//               String fileName = args[2];
                String fileName = args[2];
-               func.rm(fileName);
+               if (fileName.endsWith("/")) {
+//                  System.out.println("A directory name was provided. Please use the rmdir command to remove directories. Terminating program.");
+                  System.err.println("A directory name was provided. Please use the rmdir command to remove directories. Terminating program.");
+                  System.exit(1);
+               } else {
+                  func.rm(fileName);
+               }
                break;
             case "rmdir":
                System.out.println("rmdir command selected");

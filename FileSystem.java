@@ -96,14 +96,14 @@ public class FileSystem {
                System.out.println("A line was ignored by the compiler");
             // handle extraneous values
             } else {
-               System.out.println("An unknown file type was found by the compiler. (" + nextLine.charAt(0) + ")");
-               System.err.println("An unknown file type was found by the compiler. Terminating program.");
+               System.err.println("An unknown file type was found by the compiler (" + nextLine.charAt(0) + "). Terminating program.");
+//               System.err.println("An unknown file type was found by the compiler. Terminating program.");
                System.exit(1);
             }
          // file already exists within the internal file system
          } else {
-            System.out.println("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
-            System.err.println("A duplicate file was found whilst parsing the file system. Terminating program");
+            System.err.println("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system. Terminating program.");
+//            System.err.println("A duplicate file was found whilst parsing the file system. Terminating program");
             System.exit(1);
          }
       }
@@ -152,7 +152,7 @@ public class FileSystem {
    public static void closeFS() {
       try {
          out.close();
-//         sc.close();
+         sc.close();
       } catch (Exception e) {
 
       }

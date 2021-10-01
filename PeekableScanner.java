@@ -32,4 +32,8 @@ public class PeekableScanner {
    {
       return nextLine;
    }
+
+   public void close() {
+      scan.close();
+   }
 }

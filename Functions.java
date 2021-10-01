@@ -56,7 +56,8 @@ public class Functions {
          if (!FileSystem.fileExists(intFileName)) {
             intFile.addToFileSystem();
          } else {
-            System.out.println("This file already exists within the file system.");
+            System.err.println("This file already exists within the file system.");
+            System.exit(1);
          }
       } catch (Exception e) {
          e.printStackTrace();
@@ -75,7 +76,8 @@ public class Functions {
             if (extFile.mkdir()) {
                System.out.println("Successfully created directory " + intFileName);
             } else {
-               System.out.println("Could not create directory " + intFileName);
+               System.err.println("Could not create directory " + intFileName + ". Terminating program.");
+               System.exit(1);
             }
          } else {
             // create file on external system using given file name
@@ -112,7 +114,7 @@ public class Functions {
          FileSystem.allFiles.add(new InternalFile(dirName));
          System.out.println("Adding " + dirName + " to internal file system.");
       } else {
-         System.out.println("Cannot add " + dirName + " to file system. (already exists)");
+         System.err.println("Cannot add " + dirName + " to file system. (already exists)");
       }
    }
 
@@ -122,6 +124,7 @@ public class Functions {
     * @param fileName name of the internal file/directory to remove
     */
    public void rm(String fileName) {
+      System.out.println("REMOVING FILE " + fileName);
       InternalFile toDelete = FileSystem.getFile(fileName);
       if (toDelete == null) {
          System.err.println("The provided file was not found. Terminating program.");
@@ -134,7 +137,7 @@ public class Functions {
          // prepare temporary file for writing
          extWriter = new PrintWriter(new BufferedWriter(new FileWriter(tempFile, true)));
          // prepare scanner on file system
-         Scanner sc = new Scanner(FileSystem.fs);
+         PeekableScanner sc = new PeekableScanner(FileSystem.fs);
 
          // iterate through each line in the file system
          String currLine;
@@ -157,12 +160,25 @@ public class Functions {
                }
             // delete a directory (recursively)
             } else {
-               // if the current line begins with the same
+               // if the current line begins with the same path
                // TODO: files that start with this name
                if (currLine.substring(1).startsWith(toDelete.name)) {
+                  // check for a file within the directory
+                  if (currLine.startsWith(Symbol.FILE)) {
+                     // iterate through its data and add the ignore symbol
+                     while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
+                        extWriter.println(Symbol.IGNORE + currLine.substring(1));
+                        currLine = sc.nextLine();
+                     }
+                  }
                   // rewrite the line to include an ignore symbol in front
                   extWriter.println(Symbol.IGNORE + currLine.substring(1));
-               // the currently scanned line is not to be deleted - print it as it currently is
+//                  String subDir = currLine.substring(currLine.indexOf("/") + 1);
+//                  if (subDir.length() > 0) {
+//                     System.out.println("RECURSIVELY CALLING RM ON " + subDir);
+//                     rm(subDir);
+//                  }
+                  // the currently scanned line is not to be deleted - print it as it currently is
                } else {
                   extWriter.println(currLine);
                }
@@ -175,31 +191,38 @@ public class Functions {
          FileSystem.fs.delete();
          tempFile.renameTo(FileSystem.fs);
       } catch (IOException e) {
-         System.out.println("There was a problem with opening the file.");
+         System.err.println("There was a problem with opening the file.");
          e.printStackTrace();
       }
    }
 
    public void defrag() {
-      PeekableScanner sc = null;
+      PrintWriter extWriter = null;
+      File tempFile = new File(Symbol.TEMP_FILE_NAME);
+
       try {
-         sc = new PeekableScanner(FileSystem.fs);
-      } catch (FileNotFoundException e) {
-         e.printStackTrace();
-      }
-      // iterate the file system and convert all data to java objects for easy access
-      String nextLine;
-      while (sc.hasNextLine()) {
-         nextLine = sc.nextLine();
-         // if file does not already exist in the internal file system
-         // read a single file
-         if (nextLine.startsWith(Symbol.IGNORE)) {
-            System.out.println("A line was ignored by the compiler");
-            // handle extraneous values
-         } else {
-            System.out.println("An unknown file type was found by the compiler. (" + nextLine.charAt(0) + ")");
+         // prepare temporary file for writing
+         extWriter = new PrintWriter(new BufferedWriter(new FileWriter(tempFile, true)));
+         // prepare scanner on file system
+         Scanner sc = new Scanner(FileSystem.fs);
+
+         // iterate through each line in the file system
+         String currLine;
+         while (sc.hasNextLine()) {
+            currLine = sc.nextLine();
+            if (!currLine.startsWith(Symbol.IGNORE)) {
+               extWriter.println(currLine);
+            }
          }
-         // file already exists within the internal file system
+         sc.close();
+         extWriter.flush();
+         extWriter.close();
+         // delete current file system and replace with the temporary file
+         FileSystem.fs.delete();
+         tempFile.renameTo(FileSystem.fs);
+      } catch (IOException e) {
+         System.err.println("There was a problem with opening the file.");
+         e.printStackTrace();
       }
    }
 
@@ -219,7 +242,7 @@ public class Functions {
          });
          pw.close();
       } catch (FileNotFoundException e) {
-         System.out.println("File system was not found.");
+         System.err.println("File system was not found.");
          System.err.println(e);
       }
    }
