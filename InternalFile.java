@@ -68,7 +68,6 @@ public class InternalFile {
    }
 
    public void removeFileFromSystem() {
-
    }
 
    public void printFile() {

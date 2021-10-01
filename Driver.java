@@ -41,9 +41,13 @@ public class Driver {
          switch (args[0].toLowerCase()) {
             case "rm":
                System.out.println("rm command selected");
+               String fileName = args[2];
+               func.rm(fileName);
                break;
             case "rmdir":
                System.out.println("rmdir command selected");
+               String dirName = args[2].endsWith("/") ? args[2] : args[2] + "/";
+               func.rm(dirName);
                break;
             case "mkdir":
                System.out.println("mkdir command selected");

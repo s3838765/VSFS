@@ -31,21 +31,21 @@ public class FileSystem {
          // set up scanner for given file system
          sc = new PeekableScanner(fileSystem);
          // ensure first line is the correct format (otherwise terminate)
-         if (!sc.nextLine().equals("NOTES V1.0")) {
+         if (!sc.nextLine().equals(Symbol.HEADER_TAG)) {
             throw new FileSystemException("File system format is incorrect. It should begin with \"NOTES V1.0\". Terminating program.");
          }
 
          initialiseInternalFiles();
 
 
-         System.out.println("OUTSIDE WHILE LOOP");
-         allFiles.forEach((file) -> {
-            System.out.println("PRINTING NEW FILE ---------------");
-            System.out.println(file.name);
-            System.out.println(file.isDir);
-            System.out.println(file.data);
-            System.out.println("---------------------------------");
-         });
+//         System.out.println("OUTSIDE WHILE LOOP");
+//         allFiles.forEach((file) -> {
+//            System.out.println("PRINTING NEW FILE ---------------");
+//            System.out.println(file.name);
+//            System.out.println(file.isDir);
+//            System.out.println(file.data);
+//            System.out.println("---------------------------------");
+//         });
 
          // prepare file system for being written/appended to
          out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getName(), true)));
@@ -75,18 +75,18 @@ public class FileSystem {
                // iterate through data of current file
                while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
                   nextLine = sc.nextLine();
-                  currFileData.add(nextLine);
+                  currFileData.add(nextLine.substring(1));
                }
                // add the file to allFiles to keep track of it
                allFiles.add(new InternalFile(currFileName, currFileData));
-               System.out.println("Adding file " + currFileName);
+//               System.out.println("Adding file " + currFileName);
             // read a directory
             } else if (nextLine.startsWith(Symbol.DIR)) {
                // ensure the directory ends with "/"
                if (nextLine.endsWith("/")) {
                   String currDirName = nextLine.substring(1);
                   allFiles.add(new InternalFile(currDirName));
-                  System.out.println("Adding dir " + currDirName);
+//                  System.out.println("Adding dir " + currDirName);
                // if the directory does not end with a "/", consider it incorrectly formatted
                } else {
                   System.out.println("This directory (" + nextLine.substring(1) + ") is not correctly formatted. (must end with a \"/\")");
@@ -97,10 +97,14 @@ public class FileSystem {
             // handle extraneous values
             } else {
                System.out.println("An unknown file type was found by the compiler. (" + nextLine.charAt(0) + ")");
+               System.err.println("An unknown file type was found by the compiler. Terminating program.");
+               System.exit(1);
             }
          // file already exists within the internal file system
          } else {
             System.out.println("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
+            System.err.println("A duplicate file was found whilst parsing the file system. Terminating program");
+            System.exit(1);
          }
       }
    }
@@ -125,12 +129,21 @@ public class FileSystem {
     * @return the internal file associated with the provided file name if it exists, null if it does not exist
     */
    public static InternalFile getFile(String fileName) {
+      // TODO: files with same name as directory?
       for (InternalFile file : allFiles) {
          if (file.name.equals(fileName)) {
             return file;
          }
       }
       return null;
+   }
+
+   public static void removeFile(String fileName) {
+      for (InternalFile file : allFiles) {
+         if (file.name.equals(fileName)) {
+            allFiles.remove(file);
+         }
+      }
    }
 
    /**

@@ -3,6 +3,7 @@ import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Functions {
 
@@ -100,7 +101,7 @@ public class Functions {
     * @param dirName name of the directory you would like to create
     */
    public void mkDir(String dirName) {
-      // add "/" to directory if it does not contain it
+      // add "/" to end of directory name if it does not contain it
       if (!dirName.endsWith("/")) {
          dirName += "/";
       }
@@ -115,9 +116,68 @@ public class Functions {
       }
    }
 
+   /**
+    * Remove file/directory from the system by adding an ignore symbol in front of the
+    * respective lines within the file system
+    * @param fileName name of the internal file/directory to remove
+    */
    public void rm(String fileName) {
-      // call remove from internal file
-      FileSystem.getFile(fileName).removeFileFromSystem();
+      InternalFile toDelete = FileSystem.getFile(fileName);
+      if (toDelete == null) {
+         System.err.println("The provided file was not found. Terminating program.");
+         System.exit(1);
+      }
+      PrintWriter extWriter = null;
+      File tempFile = new File(Symbol.TEMP_FILE_NAME);
+
+      try {
+         // prepare temporary file for writing
+         extWriter = new PrintWriter(new BufferedWriter(new FileWriter(tempFile, true)));
+         // prepare scanner on file system
+         Scanner sc = new Scanner(FileSystem.fs);
+
+         // iterate through each line in the file system
+         String currLine;
+         while (sc.hasNextLine()) {
+            currLine = sc.nextLine();
+            // delete a file
+            if (!toDelete.isDir) {
+               // check if the currently scanned item should be deleted
+               if (currLine.substring(1).equals(toDelete.name)) {
+                  // rewrite the line to include an ignore symbol in front
+                  extWriter.println(Symbol.IGNORE + toDelete.name);
+                  // iterate each of the lines of data and include an ignore symbol
+                  for (String line : toDelete.data) {
+                     extWriter.println(Symbol.IGNORE + line);
+                     sc.nextLine();
+                  }
+               // the currently scanned line is not to be deleted - print it as it currently is
+               } else {
+                  extWriter.println(currLine);
+               }
+            // delete a directory (recursively)
+            } else {
+               // if the current line begins with the same
+               // TODO: files that start with this name
+               if (currLine.substring(1).startsWith(toDelete.name)) {
+                  // rewrite the line to include an ignore symbol in front
+                  extWriter.println(Symbol.IGNORE + currLine.substring(1));
+               // the currently scanned line is not to be deleted - print it as it currently is
+               } else {
+                  extWriter.println(currLine);
+               }
+            }
+         }
+         sc.close();
+         extWriter.flush();
+         extWriter.close();
+         // delete current file system and replace with the temporary file
+         FileSystem.fs.delete();
+         tempFile.renameTo(FileSystem.fs);
+      } catch (IOException e) {
+         System.out.println("There was a problem with opening the file.");
+         e.printStackTrace();
+      }
    }
 
    public void defrag() {
@@ -146,6 +206,7 @@ public class Functions {
    public void index() {
       try {
          PrintWriter pw = new PrintWriter(FileSystem.fs);
+         pw.println(Symbol.HEADER_TAG);
          FileSystem.allFiles.forEach(file -> {
             if (file.isDir) {
                pw.println(Symbol.DIR + file.name);
