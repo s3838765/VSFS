@@ -16,8 +16,19 @@ public class InternalFile {
       try {
          Scanner sc = new Scanner(extFile);
          data = new ArrayList<>();
+         // add each line of data to internal file
+         String nextLine;
          while (sc.hasNextLine()) {
-            data.add(sc.nextLine());
+            nextLine = sc.nextLine();
+            // truncate line if it exceeds 254 characters (not 255 to allow for \n)
+            if (nextLine.length() >= Symbol.MAX_CHARS) {
+               nextLine = nextLine.substring(0, Symbol.MAX_CHARS);
+            }
+            data.add(nextLine);
+         }
+         // truncate file name if it exceeds 254 characters (not 255 to allow for \n)
+         if (intFileName.length() >= Symbol.MAX_CHARS) {
+            intFileName = intFileName.substring(0, Symbol.MAX_CHARS);
          }
          this.name = intFileName;
          this.isDir = extFile.isDirectory();
@@ -42,6 +53,10 @@ public class InternalFile {
     * @param dirName the name of the directory to add to the internal file system
     */
    public InternalFile(String dirName) {
+      // truncate directory name if it exceeds 254 characters (not 255 to allow for \n)
+      if (dirName.length() >= Symbol.MAX_CHARS) {
+         dirName = dirName.substring(0, Symbol.MAX_CHARS);
+      }
       this.name = dirName;
       this.isDir = true;
       this.data = null;

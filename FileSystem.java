@@ -4,7 +4,6 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.FileSystemException;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 public class FileSystem {
    public static File fs;
@@ -64,6 +63,10 @@ public class FileSystem {
       String nextLine;
       while (sc.hasNextLine()) {
          nextLine = sc.nextLine();
+         // truncate line if it exceeds 254 characters (not 255 to allow for \n)
+         if (nextLine.length() >= Symbol.MAX_CHARS) {
+            nextLine = nextLine.substring(0, Symbol.MAX_CHARS);
+         }
          // if file does not already exist in the internal file system
          if (!fileExists(nextLine.substring(1))) {
             // read a single file
@@ -75,6 +78,10 @@ public class FileSystem {
                // iterate through data of current file
                while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
                   nextLine = sc.nextLine();
+                  // truncate line if it exceeds 254 characters (not 255 to allow for \n)
+                  if (nextLine.length() >= Symbol.MAX_CHARS) {
+                     nextLine = nextLine.substring(0, Symbol.MAX_CHARS);
+                  }
                   currFileData.add(nextLine.substring(1));
                }
                // add the file to allFiles to keep track of it
@@ -85,6 +92,10 @@ public class FileSystem {
                // ensure the directory ends with "/"
                if (nextLine.endsWith("/")) {
                   String currDirName = nextLine.substring(1);
+                  // truncate line if it exceeds 254 characters (not 255 to allow for \n)
+                  if (currDirName.length() >= Symbol.MAX_CHARS) {
+                     currDirName = currDirName.substring(0, Symbol.MAX_CHARS);
+                  }
                   allFiles.add(new InternalFile(currDirName));
 //                  System.out.println("Adding dir " + currDirName);
                // if the directory does not end with a "/", consider it incorrectly formatted
@@ -154,7 +165,7 @@ public class FileSystem {
          out.close();
          sc.close();
       } catch (Exception e) {
-
+         e.printStackTrace();
       }
    }
 

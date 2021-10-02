@@ -2,7 +2,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Functions {
@@ -196,6 +195,10 @@ public class Functions {
       }
    }
 
+   /**
+    * Iterate through the lines in the file system and remove any lines beginning with the
+    * ignore symbol (#)
+    */
    public void defrag() {
       PrintWriter extWriter = null;
       File tempFile = new File(Symbol.TEMP_FILE_NAME);
