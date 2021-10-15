@@ -31,7 +31,7 @@ public class FileSystem {
          sc = new PeekableScanner(fileSystem);
          // ensure first line is the correct format (otherwise terminate)
          if (!sc.nextLine().equals(Symbol.HEADER_TAG)) {
-            throw new FileSystemException("File system format is incorrect. It should begin with \"NOTES V1.0\". Terminating program.");
+            Driver.exitProgram("File system format is incorrect. It should begin with \"NOTES V1.0\".");
          }
 
          initialiseInternalFiles();
@@ -100,22 +100,18 @@ public class FileSystem {
 //                  System.out.println("Adding dir " + currDirName);
                // if the directory does not end with a "/", consider it incorrectly formatted
                } else {
-                  System.out.println("This directory (" + nextLine.substring(1) + ") is not correctly formatted. (must end with a \"/\")");
+                  Driver.exitProgram("The directory " + nextLine.substring(1) + " is not correctly formatted (must end with a \"/\").");
                }
             // handle comments/ignored lines (beginning with "#")
             } else if (nextLine.startsWith(Symbol.IGNORE)) {
                System.out.println("A line was ignored by the compiler");
             // handle extraneous values
             } else {
-               System.err.println("An unknown file type was found by the compiler (" + nextLine.charAt(0) + "). Terminating program.");
-//               System.err.println("An unknown file type was found by the compiler. Terminating program.");
-               System.exit(1);
+               Driver.exitProgram("An unknown file type was found by the compiler (" + nextLine.charAt(0) + ").");
             }
          // file already exists within the internal file system
          } else {
-            System.err.println("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system. Terminating program.");
-//            System.err.println("A duplicate file was found whilst parsing the file system. Terminating program");
-            System.exit(1);
+            Driver.exitProgram("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
          }
       }
    }

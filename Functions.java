@@ -2,6 +2,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Scanner;
 
 public class Functions {
@@ -55,8 +58,7 @@ public class Functions {
          if (!FileSystem.fileExists(intFileName)) {
             intFile.addToFileSystem();
          } else {
-            System.err.println("This file already exists within the file system.");
-            System.exit(1);
+            Driver.exitProgram("This file already exists within the file system.");
          }
       } catch (Exception e) {
          e.printStackTrace();
@@ -75,8 +77,7 @@ public class Functions {
             if (extFile.mkdir()) {
                System.out.println("Successfully created directory " + intFileName);
             } else {
-               System.err.println("Could not create directory " + intFileName + ". Terminating program.");
-               System.exit(1);
+               Driver.exitProgram("Could not create directory " + intFileName + ".");
             }
          } else {
             // create file on external system using given file name
@@ -113,7 +114,7 @@ public class Functions {
          FileSystem.allFiles.add(new InternalFile(dirName));
          System.out.println("Adding " + dirName + " to internal file system.");
       } else {
-         System.err.println("Cannot add " + dirName + " to file system. (already exists)");
+         Driver.exitProgram(dirName + " already exists within the file system.");
       }
    }
 
@@ -126,8 +127,7 @@ public class Functions {
       System.out.println("REMOVING FILE " + fileName);
       InternalFile toDelete = FileSystem.getFile(fileName);
       if (toDelete == null) {
-         System.err.println("The provided file was not found. Terminating program.");
-         System.exit(1);
+         Driver.exitProgram("The provided file was not found.");
       }
       PrintWriter extWriter = null;
       File tempFile = new File(Symbol.TEMP_FILE_NAME);
@@ -195,29 +195,93 @@ public class Functions {
       }
    }
 
+   private void treeSort() {
+      // sort all internal files in reverse alphabetical order
+      Collections.sort(FileSystem.allFiles, Comparator.comparing(internalFile -> internalFile.name.toLowerCase()));
+      // reverse order will allow subdirectories to be before root directories,
+      // so we add to the subdirectories rather than the roots
+      Collections.reverse(FileSystem.allFiles);
+
+      // split all internal files into directories and files (each will end up sorted)
+      ArrayList<InternalFile> allDirs = new ArrayList<>();
+      ArrayList<InternalFile> allFiles = new ArrayList<>();
+      for (InternalFile internalFile : FileSystem.allFiles) {
+         if (internalFile.isDir) {
+            allDirs.add(internalFile);
+         } else {
+            allFiles.add(internalFile);
+         }
+      }
+
+      // new order of internal files
+      ArrayList<InternalFile> newInternalFiles = new ArrayList<>();
+      // keep track of files already added to new internal files
+      ArrayList<InternalFile> filesToRemove = new ArrayList<>();
+
+      // iterate all directories
+      for (InternalFile dir : allDirs) {
+         // iterate through all files
+         for (InternalFile file : allFiles) {
+            // if the current file belongs in the current directory
+            if (file.name.startsWith(dir.name)) { // && !newInternalFiles.contains(file)
+               // add it to the start (index 0) of the new internal files
+               newInternalFiles.add(0, file);
+               // keep track that this should be removed
+               // cannot be removed here as the arraylist is being iterated - we will remove afterwards
+               filesToRemove.add(file);
+            }
+         }
+
+         // remove every file that was just added
+         for (InternalFile fileToRemove : filesToRemove) {
+            allFiles.remove(fileToRemove);
+         }
+         // add the directory to the start (index 0) of the new internal files
+         newInternalFiles.add(0, dir);
+      }
+
+      // add any root files
+      for (InternalFile remainingFile : allFiles) {
+         newInternalFiles.add(0, remainingFile);
+      }
+
+      FileSystem.allFiles = newInternalFiles;
+
+   }
+
    /**
     * Iterate through the lines in the file system and remove any lines beginning with the
     * ignore symbol (#)
     */
    public void defrag() {
+      treeSort();
       PrintWriter extWriter = null;
       File tempFile = new File(Symbol.TEMP_FILE_NAME);
 
       try {
          // prepare temporary file for writing
          extWriter = new PrintWriter(new BufferedWriter(new FileWriter(tempFile, true)));
-         // prepare scanner on file system
-         Scanner sc = new Scanner(FileSystem.fs);
+         extWriter.println(Symbol.HEADER_TAG);
 
-         // iterate through each line in the file system
-         String currLine;
-         while (sc.hasNextLine()) {
-            currLine = sc.nextLine();
-            if (!currLine.startsWith(Symbol.IGNORE)) {
-               extWriter.println(currLine);
+         for (InternalFile file : FileSystem.allFiles) {
+            // print initial prefix for file ("=" for directory, "@" for file)
+            if (file.isDir) {
+               extWriter.print(Symbol.DIR);
+            } else {
+               extWriter.print(Symbol.FILE);
+            }
+
+            // print the name of the file
+            extWriter.println(file.name);
+
+            // print the data of the file
+            if (file.data != null) {
+               for (String s : file.data) {
+                  extWriter.println(Symbol.DATA + s);
+               }
             }
          }
-         sc.close();
+
          extWriter.flush();
          extWriter.close();
          // delete current file system and replace with the temporary file
