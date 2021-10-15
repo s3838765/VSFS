@@ -1,4 +1,2 @@
-.idea/
-*.class
-*.txt
-*.notes
+*
+!*.java
