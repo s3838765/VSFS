@@ -294,23 +294,6 @@ public class Functions {
    }
 
    public void index() {
-      try {
-         PrintWriter pw = new PrintWriter(FileSystem.fs);
-         pw.println(Symbol.HEADER_TAG);
-         FileSystem.allFiles.forEach(file -> {
-            if (file.isDir) {
-               pw.println(Symbol.DIR + file.name);
-            } else {
-               pw.println(Symbol.FILE + file.name);
-               file.data.forEach(line -> {
-                  pw.println(Symbol.DATA + line);
-               });
-            }
-         });
-         pw.close();
-      } catch (FileNotFoundException e) {
-         System.err.println("File system was not found.");
-         System.err.println(e);
-      }
+      Driver.exitProgram("No implementation required.");
    }
 }
