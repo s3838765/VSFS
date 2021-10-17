@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Scanner;
 
 public class Functions {
 
@@ -195,12 +194,9 @@ public class Functions {
       }
    }
 
-   private void treeSort() {
+   public void treeSort() {
       // sort all internal files in reverse alphabetical order
       Collections.sort(FileSystem.allFiles, Comparator.comparing(internalFile -> internalFile.name.toLowerCase()));
-      // reverse order will allow subdirectories to be before root directories,
-      // so we add to the subdirectories rather than the roots
-      Collections.reverse(FileSystem.allFiles);
 
       // split all internal files into directories and files (each will end up sorted)
       ArrayList<InternalFile> allDirs = new ArrayList<>();
@@ -214,39 +210,48 @@ public class Functions {
       }
 
       // new order of internal files
-      ArrayList<InternalFile> newInternalFiles = new ArrayList<>();
-      // keep track of files already added to new internal files
-      ArrayList<InternalFile> filesToRemove = new ArrayList<>();
+      ArrayList<InternalFile> newFileStructure = new ArrayList<>();
 
-      // iterate all directories
+      // recursively sort each directory
       for (InternalFile dir : allDirs) {
-         // iterate through all files
-         for (InternalFile file : allFiles) {
-            // if the current file belongs in the current directory
-            if (file.name.startsWith(dir.name)) { // && !newInternalFiles.contains(file)
-               // add it to the start (index 0) of the new internal files
-               newInternalFiles.add(0, file);
-               // keep track that this should be removed
-               // cannot be removed here as the arraylist is being iterated - we will remove afterwards
-               filesToRemove.add(file);
-            }
-         }
-
-         // remove every file that was just added
-         for (InternalFile fileToRemove : filesToRemove) {
-            allFiles.remove(fileToRemove);
-         }
-         // add the directory to the start (index 0) of the new internal files
-         newInternalFiles.add(0, dir);
+         recursiveTreeSort(dir, allDirs, allFiles, newFileStructure);
       }
 
-      // add any root files
+      // add any remaining root files (that have not yet been added)
       for (InternalFile remainingFile : allFiles) {
-         newInternalFiles.add(0, remainingFile);
+         if (!newFileStructure.contains(remainingFile)) {
+            newFileStructure.add(remainingFile);
+         }
       }
 
-      FileSystem.allFiles = newInternalFiles;
+      for (InternalFile intFile : newFileStructure) {
+         System.out.println(intFile.name);
+      }
 
+   }
+
+   public void recursiveTreeSort(InternalFile currFile, ArrayList<InternalFile> allDirs,
+                                 ArrayList<InternalFile> allFiles, ArrayList<InternalFile> newFileStructure) {
+      // add current file to new structure
+      if (!newFileStructure.contains(currFile)) {
+         newFileStructure.add(currFile);
+      }
+
+      // find any subdirectories of current file (directory)
+      for (InternalFile subDir : allDirs) {
+         // subdirectory found
+         if (subDir.name.startsWith(currFile.name) && !newFileStructure.contains(subDir)) {
+            newFileStructure.add(subDir);
+            recursiveTreeSort(subDir, allDirs, allFiles, newFileStructure);
+         }
+      }
+      // find any files in current directory
+      for (InternalFile file : allFiles) {
+         // file belongs in current file (current subdirectory)
+         if (file.name.startsWith(currFile.name) && !file.name.substring(currFile.name.length()).contains("/") && !newFileStructure.contains(file)) {
+            newFileStructure.add(file);
+         }
+      }
    }
 
    /**
