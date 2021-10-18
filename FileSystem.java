@@ -2,12 +2,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.nio.file.FileSystemException;
 import java.util.ArrayList;
 
 public class FileSystem {
    public static File fs;
-   private static PrintWriter out = null;
+   public static PrintWriter out = null;
    private static PeekableScanner sc = null;
    public static ArrayList<InternalFile> allFiles;
 
@@ -26,6 +25,11 @@ public class FileSystem {
          } else {
             fileSystem = new File(fileName + ".notes");
          }
+         out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getPath(), true)));
+         fs = fileSystem;
+
+
+
 
          // set up scanner for given file system
          sc = new PeekableScanner(fileSystem);
@@ -34,10 +38,20 @@ public class FileSystem {
             Driver.exitProgram("File system format is incorrect. It should begin with \"NOTES V1.0\".");
          }
 
+         // prepare file system for being written/appended to
          initialiseInternalFiles();
 
 
-//         System.out.println("OUTSIDE WHILE LOOP");
+//         for (InternalFile file : allFiles) {
+         int numFiles = allFiles.size();
+         for (int i = 0; i < numFiles; i++) {
+            if (allFiles.get(i).isDir) {
+               recursiveCheckDirs(allFiles.get(i).name, 0);
+            }
+         }
+
+
+         //         System.out.println("OUTSIDE WHILE LOOP");
 //         allFiles.forEach((file) -> {
 //            System.out.println("PRINTING NEW FILE ---------------");
 //            System.out.println(file.name);
@@ -46,9 +60,6 @@ public class FileSystem {
 //            System.out.println("---------------------------------");
 //         });
 
-         // prepare file system for being written/appended to
-         out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getName(), true)));
-         fs = fileSystem;
       } catch (Exception e) {
          e.printStackTrace();
          System.err.println(e.getMessage());
@@ -93,9 +104,6 @@ public class FileSystem {
                if (nextLine.endsWith("/")) {
                   String currDirName = nextLine.substring(1);
                   // truncate line if it exceeds 254 characters (not 255 to allow for \n)
-                  if (currDirName.length() >= Symbol.MAX_CHARS) {
-                     currDirName = currDirName.substring(0, Symbol.MAX_CHARS);
-                  }
                   allFiles.add(new InternalFile(currDirName));
 //                  System.out.println("Adding dir " + currDirName);
                // if the directory does not end with a "/", consider it incorrectly formatted
@@ -104,7 +112,7 @@ public class FileSystem {
                }
             // handle comments/ignored lines (beginning with "#")
             } else if (nextLine.startsWith(Symbol.IGNORE)) {
-               System.out.println("A line was ignored by the compiler");
+//               System.out.println("A line was ignored by the compiler");
             // handle extraneous values
             } else {
                Driver.exitProgram("An unknown file type was found by the compiler (" + nextLine.charAt(0) + ").");
@@ -113,6 +121,24 @@ public class FileSystem {
          } else {
             Driver.exitProgram("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
          }
+      }
+   }
+
+   private static void recursiveCheckDirs(String fullPath, int prevIndex) {
+      // find index of the next sub-directory
+      int newIndex = fullPath.indexOf("/", prevIndex+1)+1;
+      // if there is a next sub-directory (we have not yet reached the end)
+      if (newIndex != 0) {
+         // string of currently scanned sub-directory
+         String subDir = fullPath.substring(0, newIndex);
+         // if the currently scanned sub-directory does not exist
+         if (!fileExists(subDir)) {
+            // add sub-directory to file system
+            allFiles.add(new InternalFile(subDir));
+            writeLineToFile(Symbol.DIR + subDir);
+         }
+         // check the next sub-directory in the full path
+         recursiveCheckDirs(fullPath, newIndex);
       }
    }
 
@@ -146,11 +172,7 @@ public class FileSystem {
    }
 
    public static void removeFile(String fileName) {
-      for (InternalFile file : allFiles) {
-         if (file.name.equals(fileName)) {
-            allFiles.remove(file);
-         }
-      }
+      allFiles.removeIf(file -> file.name.equals(fileName));
    }
 
    /**
@@ -158,8 +180,9 @@ public class FileSystem {
     */
    public static void closeFS() {
       try {
-         out.close();
          sc.close();
+         out.flush();
+         out.close();
       } catch (Exception e) {
          e.printStackTrace();
       }
@@ -178,6 +201,8 @@ public class FileSystem {
     * @param text text to be appended to the file system
     */
    public static void writeLineToFile(String text) {
+      System.out.println("WRITING LINE TO FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      System.out.println(out);
       out.println(text);
    }
 

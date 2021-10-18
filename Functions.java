@@ -29,7 +29,7 @@ public class Functions {
     * @throws IOException
     */
    private void listFile(InternalFile intFile) throws IOException {
-      System.out.printf("%s%s %d %s %s %d %s %s%n",
+      System.out.printf("%s%s %s %s %s %s %s %s%n",
               intFile.isDir ? "d" : "-",
               PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
@@ -196,7 +196,7 @@ public class Functions {
 
    public void treeSort() {
       // sort all internal files in reverse alphabetical order
-      Collections.sort(FileSystem.allFiles, Comparator.comparing(internalFile -> internalFile.name.toLowerCase()));
+      FileSystem.allFiles.sort(Comparator.comparing(internalFile -> internalFile.name.toLowerCase()));
 
       // split all internal files into directories and files (each will end up sorted)
       ArrayList<InternalFile> allDirs = new ArrayList<>();
