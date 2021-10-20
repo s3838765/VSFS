@@ -46,6 +46,7 @@ public class FileSystem {
          int numFiles = allFiles.size();
          for (int i = 0; i < numFiles; i++) {
             if (allFiles.get(i).isDir) {
+               // TODO: check files as well
                recursiveCheckDirs(allFiles.get(i).name, 0);
             }
          }
@@ -74,52 +75,48 @@ public class FileSystem {
       String nextLine;
       while (sc.hasNextLine()) {
          nextLine = sc.nextLine();
-         // truncate line if it exceeds 254 characters (not 255 to allow for \n)
-         if (nextLine.length() >= Symbol.MAX_CHARS) {
-            nextLine = nextLine.substring(0, Symbol.MAX_CHARS);
-         }
-         // if file does not already exist in the internal file system
-         if (!fileExists(nextLine.substring(1))) {
-            // read a single file
-            if (nextLine.startsWith(Symbol.FILE)) {
-               // title of the file
-               String currFileName = nextLine.substring(1);
-               ArrayList<String> currFileData = new ArrayList<>();
 
-               // iterate through data of current file
-               while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
-                  nextLine = sc.nextLine();
-                  // truncate line if it exceeds 254 characters (not 255 to allow for \n)
-                  if (nextLine.length() >= Symbol.MAX_CHARS) {
-                     nextLine = nextLine.substring(0, Symbol.MAX_CHARS);
-                  }
-                  currFileData.add(nextLine.substring(1));
-               }
-               // add the file to allFiles to keep track of it
-               allFiles.add(new InternalFile(currFileName, currFileData));
-//               System.out.println("Adding file " + currFileName);
-            // read a directory
-            } else if (nextLine.startsWith(Symbol.DIR)) {
-               // ensure the directory ends with "/"
-               if (nextLine.endsWith("/")) {
-                  String currDirName = nextLine.substring(1);
-                  // truncate line if it exceeds 254 characters (not 255 to allow for \n)
-                  allFiles.add(new InternalFile(currDirName));
-//                  System.out.println("Adding dir " + currDirName);
-               // if the directory does not end with a "/", consider it incorrectly formatted
-               } else {
-                  Driver.exitProgram("The directory " + nextLine.substring(1) + " is not correctly formatted (must end with a \"/\").");
-               }
-            // handle comments/ignored lines (beginning with "#")
-            } else if (nextLine.startsWith(Symbol.IGNORE)) {
-//               System.out.println("A line was ignored by the compiler");
-            // handle extraneous values
-            } else {
-               Driver.exitProgram("An unknown file type was found by the compiler (" + nextLine.charAt(0) + ").");
-            }
          // file already exists within the internal file system
-         } else {
+         if (fileExists(nextLine.substring(1))) {
             Driver.exitProgram("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
+         }
+         // getting here means file does not already exist in the internal file system
+
+         // truncate line if it exceeds 255 characters - used for file names
+         if (nextLine.length() > Symbol.MAX_CHARS) {
+            nextLine = nextLine.substring(0, Symbol.MAX_CHARS-1);
+         }
+
+         // read a single file
+         if (nextLine.startsWith(Symbol.FILE)) {
+            // title of the file
+            String currFileName = nextLine.substring(1);
+            ArrayList<String> currFileData = new ArrayList<>();
+            boolean isEncoded = sc.hasNextLine() && sc.peek().equals(Symbol.ENCODED_SHEBANG);
+
+            // iterate through data of current file
+            while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
+               nextLine = sc.nextLine();
+               // truncate line if it exceeds 255 characters
+               if (nextLine.length() > Symbol.MAX_CHARS) {
+                  nextLine = nextLine.substring(0, Symbol.MAX_CHARS - 1);
+               }
+               currFileData.add(nextLine.substring(1));
+            }
+            // add the file to allFiles to keep track of it
+            allFiles.add(new InternalFile(currFileName, currFileData, isEncoded));
+         // read a directory
+         } else if (nextLine.startsWith(Symbol.DIR)) {
+            // terminate program if the directory is not formatted correctly
+            if (!nextLine.endsWith("/")) {
+               Driver.exitProgram("The directory " + nextLine.substring(1) + " is not correctly formatted (must end with a \"/\").");
+            }
+            // getting here indicates the directory is formatted correctly
+            String currDirName = nextLine.substring(1);
+            allFiles.add(new InternalFile(currDirName));
+         // handle extraneous values
+         } else if (!nextLine.startsWith(Symbol.IGNORE)) {
+            Driver.exitProgram("An unknown file type was found by the compiler (" + nextLine.charAt(0) + ").");
          }
       }
    }
@@ -201,8 +198,6 @@ public class FileSystem {
     * @param text text to be appended to the file system
     */
    public static void writeLineToFile(String text) {
-      System.out.println("WRITING LINE TO FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      System.out.println(out);
       out.println(text);
    }
 

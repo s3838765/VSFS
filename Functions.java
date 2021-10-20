@@ -3,7 +3,8 @@ import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Comparator;
 
 public class Functions {
@@ -12,6 +13,7 @@ public class Functions {
     * Iteratively call the listFile function on every file and directory in the file system
     */
    public void list() {
+      treeSort();
       FileSystem.allFiles.forEach(internalFile -> {
          try {
             listFile(internalFile);
@@ -80,14 +82,51 @@ public class Functions {
             }
          } else {
             // create file on external system using given file name
-            // initialise writer for external file
-            PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, true)));
             // iterate each line of data from the file and print it to the external file
-            FileSystem.getFile(intFileName).data.forEach(dataLine -> {
-               extWriter.println(dataLine);
-            });
+
+            // TODO: clear contents of overwriting file
+//            FileSystem.getFile(intFileName).data.forEach(dataLine -> {
+//               extWriter.println(dataLine);
+//            });
             // close the writer
-            extWriter.close();
+//            extWriter.close();
+
+            // TODO: SYSTEM NOT GETTING LAST CHAR OF STRING IN DATA
+            if (intFile.isEncoded) {
+               FileOutputStream fos = new FileOutputStream(extFile);
+               FileOutputStream fos1 = new FileOutputStream(extFile + "1");
+               StringBuilder fileData = new StringBuilder();
+               String str = "";
+               for (int i = 1; i < intFile.data.size(); i++) {
+                  fileData.append(intFile.data.get(i));
+                  str += intFile.data.get(i);
+//                  if (i == intFile.data.size()-1) {
+//                     System.out.println(intFile.data.get(i-1));
+//                     String s = intFile.data.get(i);
+//                     System.out.println(str.substring(str.length()-10));
+//                     System.out.println(s.substring(s.length()-10));
+//                  }
+               }
+//               FileInputStream fis = new FileInputStream("VSFS.jar");
+//               String encoded = Base64.getEncoder().encodeToString(fis.readAllBytes());
+
+               String sbStr = fileData.toString();
+//               System.out.println(encoded.substring(0, 100));
+//               System.out.println(sbStr.substring(0, 100));
+//               System.out.println(str.substring(0, 100));
+               fos.write(Base64.getDecoder().decode(sbStr));
+//               System.out.println(encoded.substring(encoded.length()-100));
+//               System.out.println(sbStr.substring(sbStr.length()-100));
+//               System.out.println(str.substring(str.length()-100));
+//               fos1.write(Base64.getDecoder().decode(str));
+            } else {
+               // initialise writer for external file
+               PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, false)));
+               for (String s : intFile.data) {
+                  extWriter.println(s);
+               }
+               extWriter.close();
+            }
          }
 
 
@@ -106,8 +145,6 @@ public class Functions {
       if (!dirName.endsWith("/")) {
          dirName += "/";
       }
-      System.out.println("dirName: " + dirName);
-      System.out.println("exists: " + FileSystem.fileExists(dirName));
       if (!FileSystem.fileExists(dirName)) {
          FileSystem.writeLineToFile(Symbol.DIR + dirName);
          FileSystem.allFiles.add(new InternalFile(dirName));
@@ -223,11 +260,6 @@ public class Functions {
             newFileStructure.add(remainingFile);
          }
       }
-
-      for (InternalFile intFile : newFileStructure) {
-         System.out.println(intFile.name);
-      }
-
    }
 
    public void recursiveTreeSort(InternalFile currFile, ArrayList<InternalFile> allDirs,
