@@ -2,9 +2,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.*;
 
 public class Functions {
 
@@ -12,14 +10,29 @@ public class Functions {
     * Iteratively call the listFile function on every file and directory in the file system
     */
    public void list() {
-      FileSystem.allFiles.forEach(internalFile -> {
-         try {
-            listFile(internalFile);
-         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println(e);
+      treeSort();
+      // find size of all files and store in array
+      Integer[] fileSizes = new Integer[FileSystem.allFiles.size()];
+      for (int i = 0; i < fileSizes.length; i++) {
+         int fileSize = 0;
+         if (!FileSystem.allFiles.get(i).isDir) {
+            for (String s : FileSystem.allFiles.get(i).data) {
+               fileSize += s.length();
+            }
+         } else {
+            fileSize = 512;
          }
-      });
+         fileSizes[i] = fileSize;
+      }
+
+      // list each file individually
+      for (int i = 0; i < FileSystem.allFiles.size(); i++) {
+         try {
+            listFile(FileSystem.allFiles.get(i), fileSizes, i);
+         } catch (Exception e) {
+            e.printStackTrace();
+         }
+      }
    }
 
    /**
@@ -28,18 +41,22 @@ public class Functions {
     * @param intFile an internal file stored by the FileSystem class
     * @throws IOException
     */
-   private void listFile(InternalFile intFile) throws IOException {
-      System.out.printf("%s%s %s %s %s %s %s %s%n",
+   private void listFile(InternalFile intFile, Integer[] fileSizes, int currIndex) throws IOException {
+      // calculate max file size to adjust width accordingly
+      int maxFileSize = Collections.max(Arrays.asList(fileSizes));
+
+      // format string with variable width for size
+      String format = "%s%s %s %s %s %" + String.valueOf(maxFileSize).length() + "s %s %s%n";
+      System.out.printf(format,
               intFile.isDir ? "d" : "-",
               PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
-              // Files.getAttribute(FSUtil.fs.toPath(), "unix:uid"),
-              Files.getOwner(FileSystem.fs.toPath()),
-              // TODO: Convert group id to group name
+              Files.getAttribute(FileSystem.fs.toPath(), "unix:uid"),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:gid"),
-              Files.getAttribute(FileSystem.fs.toPath(), "size"),
+              fileSizes[currIndex],
               new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
-              intFile.name);
+              intFile.name
+      );
    }
 
    /**
@@ -48,13 +65,22 @@ public class Functions {
     */
    public void copyIn(String extFileName, String intFileName) {
       try {
-         // convert the external file into a File object and then create an InternalFile from it
+         // if the provided name was invalid (contains symbols) - terminate program
+         if (!intFileName.matches(Symbol.FILENAME_REGEX)) {
+            Driver.exitProgram("The filename you provided was invalid.");
+         }
+
+         // if the external file is a directory - terminate program
          File extFile = new File(extFileName);
-         InternalFile intFile = new InternalFile(extFile, intFileName);
+         if (extFile.isDirectory()) {
+            Driver.exitProgram("Copying directories is not supported.");
+         }
 
          // if the file (name) does not exist, add it to the system
          // this allows you to copy an external file into the internal file system with an alternate name
          if (!FileSystem.fileExists(intFileName)) {
+            // convert the external file into a File object and then create an InternalFile from it
+            InternalFile intFile = new InternalFile(extFile, intFileName);
             intFile.addToFileSystem();
          } else {
             Driver.exitProgram("This file already exists within the file system.");
@@ -67,26 +93,35 @@ public class Functions {
 
    public void copyOut(String intFileName, String extFileName) {
       try {
-         System.out.println("Copying file " + intFileName + " to " + extFileName);
-
          InternalFile intFile = FileSystem.getFile(intFileName);
-         File extFile = new File(extFileName);
+         assert intFile != null;
          if (intFile.isDir) {
-            // TODO: recursively copy directories
-            if (extFile.mkdir()) {
-               System.out.println("Successfully created directory " + intFileName);
-            } else {
-               Driver.exitProgram("Could not create directory " + intFileName + ".");
+            Driver.exitProgram("Copying directories is not supported.");
+         }
+         File extFile = new File(extFileName);
+         // create file on external system using given file name
+         // iterate each line of data from the file and print it to the external file
+
+
+         // file is encoded - decode and write to file
+         if (intFile.isEncoded) {
+            FileOutputStream fos = new FileOutputStream(extFile);
+            StringBuilder fileData = new StringBuilder();
+            // iterate each line in data excluding first line (shebang line)
+            for (int i = 1; i < intFile.data.size(); i++) {
+               fileData.append(intFile.data.get(i));
             }
+            // decode text and write to file
+            String sbStr = fileData.toString();
+            fos.write(Base64.getDecoder().decode(sbStr));
+         // file is regular file - simply write to file
          } else {
-            // create file on external system using given file name
             // initialise writer for external file
-            PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, true)));
-            // iterate each line of data from the file and print it to the external file
-            FileSystem.getFile(intFileName).data.forEach(dataLine -> {
-               extWriter.println(dataLine);
-            });
-            // close the writer
+            PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, false)));
+            for (String s : intFile.data) {
+               extWriter.println(s);
+            }
+            extWriter.flush();
             extWriter.close();
          }
 
@@ -106,12 +141,11 @@ public class Functions {
       if (!dirName.endsWith("/")) {
          dirName += "/";
       }
-      System.out.println("dirName: " + dirName);
-      System.out.println("exists: " + FileSystem.fileExists(dirName));
       if (!FileSystem.fileExists(dirName)) {
-         FileSystem.writeLineToFile(Symbol.DIR + dirName);
-         FileSystem.allFiles.add(new InternalFile(dirName));
-         System.out.println("Adding " + dirName + " to internal file system.");
+         FileSystem.recursiveCheckDirs(dirName, 0);
+//         FileSystem.writeLineToFile(Symbol.DIR + dirName);
+//         FileSystem.allFiles.add(new InternalFile(dirName));
+//         System.out.println("Adding " + dirName + " to internal file system.");
       } else {
          Driver.exitProgram(dirName + " already exists within the file system.");
       }
@@ -224,10 +258,7 @@ public class Functions {
          }
       }
 
-      for (InternalFile intFile : newFileStructure) {
-         System.out.println(intFile.name);
-      }
-
+      FileSystem.allFiles = newFileStructure;
    }
 
    public void recursiveTreeSort(InternalFile currFile, ArrayList<InternalFile> allDirs,
@@ -252,6 +283,7 @@ public class Functions {
             newFileStructure.add(file);
          }
       }
+
    }
 
    /**
