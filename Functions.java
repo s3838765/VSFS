@@ -3,7 +3,6 @@ import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 
@@ -31,17 +30,23 @@ public class Functions {
     * @throws IOException
     */
    private void listFile(InternalFile intFile) throws IOException {
-      System.out.printf("%s%s %s %s %s %s %s %s%n",
+      // calculate file size according to number of characters in the file
+      int fileSize = 0;
+      if (!intFile.isDir) {
+         for (String s : intFile.data) {
+            fileSize += s.length();
+         }
+      }
+      System.out.printf("%s%s %3s %s %s %-5s %s %s%n",
               intFile.isDir ? "d" : "-",
               PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
-              // Files.getAttribute(FSUtil.fs.toPath(), "unix:uid"),
-              Files.getOwner(FileSystem.fs.toPath()),
-              // TODO: Convert group id to group name
+              Files.getAttribute(FileSystem.fs.toPath(), "unix:uid"),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:gid"),
-              Files.getAttribute(FileSystem.fs.toPath(), "size"),
+              fileSize,
               new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
-              intFile.name);
+              intFile.name
+      );
    }
 
    /**
@@ -50,13 +55,22 @@ public class Functions {
     */
    public void copyIn(String extFileName, String intFileName) {
       try {
-         // convert the external file into a File object and then create an InternalFile from it
+         // if the provided name was invalid (contains symbols) - terminate program
+         if (!intFileName.matches(Symbol.FILENAME_REGEX)) {
+            Driver.exitProgram("The filename you provided was invalid.");
+         }
+
+         // if the external file is a directory - terminate program
          File extFile = new File(extFileName);
-         InternalFile intFile = new InternalFile(extFile, intFileName);
+         if (extFile.isDirectory()) {
+            Driver.exitProgram("Copying directories is not supported.");
+         }
 
          // if the file (name) does not exist, add it to the system
          // this allows you to copy an external file into the internal file system with an alternate name
          if (!FileSystem.fileExists(intFileName)) {
+            // convert the external file into a File object and then create an InternalFile from it
+            InternalFile intFile = new InternalFile(extFile, intFileName);
             intFile.addToFileSystem();
          } else {
             Driver.exitProgram("This file already exists within the file system.");
@@ -69,64 +83,36 @@ public class Functions {
 
    public void copyOut(String intFileName, String extFileName) {
       try {
-         System.out.println("Copying file " + intFileName + " to " + extFileName);
-
          InternalFile intFile = FileSystem.getFile(intFileName);
-         File extFile = new File(extFileName);
+         assert intFile != null;
          if (intFile.isDir) {
-            // TODO: recursively copy directories
-            if (extFile.mkdir()) {
-               System.out.println("Successfully created directory " + intFileName);
-            } else {
-               Driver.exitProgram("Could not create directory " + intFileName + ".");
+            Driver.exitProgram("Copying directories is not supported.");
+         }
+         File extFile = new File(extFileName);
+         // create file on external system using given file name
+         // iterate each line of data from the file and print it to the external file
+
+
+         // file is encoded - decode and write to file
+         if (intFile.isEncoded) {
+            FileOutputStream fos = new FileOutputStream(extFile);
+            StringBuilder fileData = new StringBuilder();
+            // iterate each line in data excluding first line (shebang line)
+            for (int i = 1; i < intFile.data.size(); i++) {
+               fileData.append(intFile.data.get(i));
             }
+            // decode text and write to file
+            String sbStr = fileData.toString();
+            fos.write(Base64.getDecoder().decode(sbStr));
+         // file is regular file - simply write to file
          } else {
-            // create file on external system using given file name
-            // iterate each line of data from the file and print it to the external file
-
-            // TODO: clear contents of overwriting file
-//            FileSystem.getFile(intFileName).data.forEach(dataLine -> {
-//               extWriter.println(dataLine);
-//            });
-            // close the writer
-//            extWriter.close();
-
-            // TODO: SYSTEM NOT GETTING LAST CHAR OF STRING IN DATA
-            if (intFile.isEncoded) {
-               FileOutputStream fos = new FileOutputStream(extFile);
-               FileOutputStream fos1 = new FileOutputStream(extFile + "1");
-               StringBuilder fileData = new StringBuilder();
-               String str = "";
-               for (int i = 1; i < intFile.data.size(); i++) {
-                  fileData.append(intFile.data.get(i));
-                  str += intFile.data.get(i);
-//                  if (i == intFile.data.size()-1) {
-//                     System.out.println(intFile.data.get(i-1));
-//                     String s = intFile.data.get(i);
-//                     System.out.println(str.substring(str.length()-10));
-//                     System.out.println(s.substring(s.length()-10));
-//                  }
-               }
-//               FileInputStream fis = new FileInputStream("VSFS.jar");
-//               String encoded = Base64.getEncoder().encodeToString(fis.readAllBytes());
-
-               String sbStr = fileData.toString();
-//               System.out.println(encoded.substring(0, 100));
-//               System.out.println(sbStr.substring(0, 100));
-//               System.out.println(str.substring(0, 100));
-               fos.write(Base64.getDecoder().decode(sbStr));
-//               System.out.println(encoded.substring(encoded.length()-100));
-//               System.out.println(sbStr.substring(sbStr.length()-100));
-//               System.out.println(str.substring(str.length()-100));
-//               fos1.write(Base64.getDecoder().decode(str));
-            } else {
-               // initialise writer for external file
-               PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, false)));
-               for (String s : intFile.data) {
-                  extWriter.println(s);
-               }
-               extWriter.close();
+            // initialise writer for external file
+            PrintWriter extWriter = new PrintWriter(new BufferedWriter(new FileWriter(extFileName, false)));
+            for (String s : intFile.data) {
+               extWriter.println(s);
             }
+            extWriter.flush();
+            extWriter.close();
          }
 
 
@@ -146,9 +132,10 @@ public class Functions {
          dirName += "/";
       }
       if (!FileSystem.fileExists(dirName)) {
-         FileSystem.writeLineToFile(Symbol.DIR + dirName);
-         FileSystem.allFiles.add(new InternalFile(dirName));
-         System.out.println("Adding " + dirName + " to internal file system.");
+         FileSystem.recursiveCheckDirs(dirName, 0);
+//         FileSystem.writeLineToFile(Symbol.DIR + dirName);
+//         FileSystem.allFiles.add(new InternalFile(dirName));
+//         System.out.println("Adding " + dirName + " to internal file system.");
       } else {
          Driver.exitProgram(dirName + " already exists within the file system.");
       }

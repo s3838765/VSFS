@@ -28,9 +28,6 @@ public class FileSystem {
          out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getPath(), true)));
          fs = fileSystem;
 
-
-
-
          // set up scanner for given file system
          sc = new PeekableScanner(fileSystem);
          // ensure first line is the correct format (otherwise terminate)
@@ -41,14 +38,9 @@ public class FileSystem {
          // prepare file system for being written/appended to
          initialiseInternalFiles();
 
-
-//         for (InternalFile file : allFiles) {
-         int numFiles = allFiles.size();
-         for (int i = 0; i < numFiles; i++) {
-            if (allFiles.get(i).isDir) {
-               // TODO: check files as well
-               recursiveCheckDirs(allFiles.get(i).name, 0);
-            }
+         // create any directories that do not exist
+         for (int i = 0; i < allFiles.size(); i++) {
+            recursiveCheckDirs(allFiles.get(i).name, 0);
          }
 
 
@@ -87,6 +79,10 @@ public class FileSystem {
             nextLine = nextLine.substring(0, Symbol.MAX_CHARS-1);
          }
 
+         if (!nextLine.substring(1).matches(Symbol.FILENAME_REGEX)) {
+            Driver.exitProgram("An invalid filename was detected.");
+         }
+
          // read a single file
          if (nextLine.startsWith(Symbol.FILE)) {
             // title of the file
@@ -121,7 +117,7 @@ public class FileSystem {
       }
    }
 
-   private static void recursiveCheckDirs(String fullPath, int prevIndex) {
+   public static void recursiveCheckDirs(String fullPath, int prevIndex) {
       // find index of the next sub-directory
       int newIndex = fullPath.indexOf("/", prevIndex+1)+1;
       // if there is a next sub-directory (we have not yet reached the end)
@@ -159,12 +155,12 @@ public class FileSystem {
     * @return the internal file associated with the provided file name if it exists, null if it does not exist
     */
    public static InternalFile getFile(String fileName) {
-      // TODO: files with same name as directory?
       for (InternalFile file : allFiles) {
          if (file.name.equals(fileName)) {
             return file;
          }
       }
+      Driver.exitProgram("The provided file was not found.");
       return null;
    }
 
@@ -190,6 +186,9 @@ public class FileSystem {
     * @param text text to be appended to the file system
     */
    public static void writeToFile(String text) {
+      if (text.length() > Symbol.MAX_CHARS) {
+         text = text.substring(0, Symbol.MAX_CHARS) + "\n";
+      }
       out.print(text);
    }
 

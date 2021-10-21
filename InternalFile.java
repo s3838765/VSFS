@@ -1,8 +1,6 @@
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.Base64;
 
 public class InternalFile {
@@ -78,11 +76,11 @@ public class InternalFile {
 //         this.data.add(Base64.getEncoder().encodeToString(fileBytes));
       } else {
          for (byte b : fileBytes) {
+            currLine += (char) b;
             if (((char) b) == '\n') {
                this.data.add(currLine);
                currLine = "";
             }
-            currLine += (char) b;
          }
       }
    }
@@ -110,7 +108,8 @@ public class InternalFile {
 
       // print the data of the file (if applicable: a directory will not contain any data)
       for (String s : data) {
-         FileSystem.writeLineToFile(Symbol.DATA + s);
+         System.out.println("Printing " + s + "---");
+         FileSystem.writeToFile(Symbol.DATA + s);
       }
    }
 
