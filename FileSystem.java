@@ -2,6 +2,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class FileSystem {
@@ -25,13 +27,20 @@ public class FileSystem {
          } else {
             fileSystem = new File(fileName + ".notes");
          }
+
+         if (!fileSystem.exists()) {
+            Driver.exitProgram("The specified file system does not exist.");
+         }
+
          out = new PrintWriter(new BufferedWriter(new FileWriter(fileSystem.getPath(), true)));
          fs = fileSystem;
 
          // set up scanner for given file system
          sc = new PeekableScanner(fileSystem);
          // ensure first line is the correct format (otherwise terminate)
-         if (!sc.nextLine().equals(Symbol.HEADER_TAG)) {
+         if (!sc.hasNextLine()) {
+            Driver.exitProgram("The specified file system is empty.");
+         } else if (!sc.nextLine().equals(Symbol.HEADER_TAG)) {
             Driver.exitProgram("File system format is incorrect. It should begin with \"NOTES V1.0\".");
          }
 
@@ -80,6 +89,7 @@ public class FileSystem {
          }
 
          if (!nextLine.substring(1).matches(Symbol.FILENAME_REGEX)) {
+            System.out.println(nextLine.substring(1));
             Driver.exitProgram("An invalid filename was detected.");
          }
 

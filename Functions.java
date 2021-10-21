@@ -2,9 +2,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Comparator;
+import java.util.*;
 
 public class Functions {
 
@@ -13,14 +11,28 @@ public class Functions {
     */
    public void list() {
       treeSort();
-      FileSystem.allFiles.forEach(internalFile -> {
-         try {
-            listFile(internalFile);
-         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println(e);
+      // find size of all files and store in array
+      Integer[] fileSizes = new Integer[FileSystem.allFiles.size()];
+      for (int i = 0; i < fileSizes.length; i++) {
+         int fileSize = 0;
+         if (!FileSystem.allFiles.get(i).isDir) {
+            for (String s : FileSystem.allFiles.get(i).data) {
+               fileSize += s.length();
+            }
+         } else {
+            fileSize = 512;
          }
-      });
+         fileSizes[i] = fileSize;
+      }
+
+      // list each file individually
+      for (int i = 0; i < FileSystem.allFiles.size(); i++) {
+         try {
+            listFile(FileSystem.allFiles.get(i), fileSizes, i);
+         } catch (Exception e) {
+            e.printStackTrace();
+         }
+      }
    }
 
    /**
@@ -29,21 +41,19 @@ public class Functions {
     * @param intFile an internal file stored by the FileSystem class
     * @throws IOException
     */
-   private void listFile(InternalFile intFile) throws IOException {
-      // calculate file size according to number of characters in the file
-      int fileSize = 0;
-      if (!intFile.isDir) {
-         for (String s : intFile.data) {
-            fileSize += s.length();
-         }
-      }
-      System.out.printf("%s%s %3s %s %s %-5s %s %s%n",
+   private void listFile(InternalFile intFile, Integer[] fileSizes, int currIndex) throws IOException {
+      // calculate max file size to adjust width accordingly
+      int maxFileSize = Collections.max(Arrays.asList(fileSizes));
+
+      // format string with variable width for size
+      String format = "%s%s %s %s %s %" + String.valueOf(maxFileSize).length() + "s %s %s%n";
+      System.out.printf(format,
               intFile.isDir ? "d" : "-",
               PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:uid"),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:gid"),
-              fileSize,
+              fileSizes[currIndex],
               new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
               intFile.name
       );
@@ -247,6 +257,8 @@ public class Functions {
             newFileStructure.add(remainingFile);
          }
       }
+
+      FileSystem.allFiles = newFileStructure;
    }
 
    public void recursiveTreeSort(InternalFile currFile, ArrayList<InternalFile> allDirs,
@@ -271,6 +283,7 @@ public class Functions {
             newFileStructure.add(file);
          }
       }
+
    }
 
    /**

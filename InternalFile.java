@@ -18,7 +18,9 @@ public class InternalFile {
       try {
          this.data = new ArrayList<>();
          FileInputStream fis = new FileInputStream(extFile);
-         byte[] fileBytes = fis.readAllBytes();
+         byte[] fileBytes = new byte[(int) extFile.length()];
+         fis.read(fileBytes);
+         fis.close();
          // if non-ascii character is detected within external file - encode data
          this.isEncoded = !new String(fileBytes).matches(Symbol.ASCII_CHECK_REGEX);
          encodeData(fileBytes);
@@ -108,8 +110,11 @@ public class InternalFile {
 
       // print the data of the file (if applicable: a directory will not contain any data)
       for (String s : data) {
-         System.out.println("Printing " + s + "---");
-         FileSystem.writeToFile(Symbol.DATA + s);
+         if (this.isEncoded) {
+            FileSystem.writeLineToFile(Symbol.DATA + s);
+         } else {
+            FileSystem.writeToFile(Symbol.DATA + s);
+         }
       }
    }
 
