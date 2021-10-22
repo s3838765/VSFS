@@ -94,6 +94,7 @@ public class InternalFile {
     * Add the data of a given internal file to the file system notes file
     */
    public void addToFileSystem() {
+      FileSystem.recursiveCheckDirs(this.name, 0);
       // print initial prefix for file ("=" for directory, "@" for file, "&" for encoded file)
       if (this.isDir) {
          FileSystem.writeToFile(Symbol.DIR);
@@ -116,6 +117,7 @@ public class InternalFile {
             FileSystem.writeToFile(Symbol.DATA + s);
          }
       }
+
    }
 
 

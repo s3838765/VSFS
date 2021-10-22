@@ -1,5 +1,6 @@
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -51,8 +52,8 @@ public class Functions {
               intFile.isDir ? "d" : "-",
               PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
               Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
-              Files.getAttribute(FileSystem.fs.toPath(), "unix:uid"),
-              Files.getAttribute(FileSystem.fs.toPath(), "unix:gid"),
+              Files.readAttributes(Paths.get(FileSystem.fs.toURI()), PosixFileAttributes.class).owner().getName(),
+              Files.readAttributes(Paths.get(FileSystem.fs.toURI()), PosixFileAttributes.class).group().getName(),
               fileSizes[currIndex],
               new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
               intFile.name
@@ -157,7 +158,6 @@ public class Functions {
     * @param fileName name of the internal file/directory to remove
     */
    public void rm(String fileName) {
-      System.out.println("REMOVING FILE " + fileName);
       InternalFile toDelete = FileSystem.getFile(fileName);
       if (toDelete == null) {
          Driver.exitProgram("The provided file was not found.");
@@ -292,11 +292,14 @@ public class Functions {
     */
    public void defrag() {
       treeSort();
-      PrintWriter extWriter = null;
-      File tempFile = new File(Symbol.TEMP_FILE_NAME);
+      rewriteNotesFile();
+   }
 
+   public static void rewriteNotesFile() {
       try {
          // prepare temporary file for writing
+         PrintWriter extWriter = null;
+         File tempFile = new File(Symbol.TEMP_FILE_NAME);
          extWriter = new PrintWriter(new BufferedWriter(new FileWriter(tempFile, true)));
          extWriter.println(Symbol.HEADER_TAG);
 

@@ -2,8 +2,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class FileSystem {
@@ -52,15 +50,7 @@ public class FileSystem {
             recursiveCheckDirs(allFiles.get(i).name, 0);
          }
 
-
-         //         System.out.println("OUTSIDE WHILE LOOP");
-//         allFiles.forEach((file) -> {
-//            System.out.println("PRINTING NEW FILE ---------------");
-//            System.out.println(file.name);
-//            System.out.println(file.isDir);
-//            System.out.println(file.data);
-//            System.out.println("---------------------------------");
-//         });
+         // rewrite file with any changes
 
       } catch (Exception e) {
          e.printStackTrace();
@@ -73,57 +63,84 @@ public class FileSystem {
     */
    private static void initialiseInternalFiles() {
       // iterate the file system and convert all data to java objects for easy access
-      String nextLine;
+      boolean reWrite = false;
+      String currLine;
       while (sc.hasNextLine()) {
-         nextLine = sc.nextLine();
+         currLine = sc.nextLine();
 
-         // file already exists within the internal file system
-         if (fileExists(nextLine.substring(1))) {
-            Driver.exitProgram("A duplicate file (" + nextLine.substring(1) + ") was found whilst parsing the file system.");
-         }
-         // getting here means file does not already exist in the internal file system
-
-         // truncate line if it exceeds 255 characters - used for file names
-         if (nextLine.length() > Symbol.MAX_CHARS) {
-            nextLine = nextLine.substring(0, Symbol.MAX_CHARS-1);
+         if (currLine.contains("//")) {
+            Driver.exitProgram("A directory with no name was detected.");
          }
 
-         if (!nextLine.substring(1).matches(Symbol.FILENAME_REGEX)) {
-            System.out.println(nextLine.substring(1));
-            Driver.exitProgram("An invalid filename was detected.");
-         }
+         if (currLine.length() > 0) {
+            // file already exists within the internal file system
+            if (fileExists(currLine.substring(1))) {
+               Driver.exitProgram("A duplicate file (" + currLine.substring(1) + ") was found whilst parsing the file system.");
+            }
+            // getting here means file does not already exist in the internal file system
 
-         // read a single file
-         if (nextLine.startsWith(Symbol.FILE)) {
-            // title of the file
-            String currFileName = nextLine.substring(1);
-            ArrayList<String> currFileData = new ArrayList<>();
-            boolean isEncoded = sc.hasNextLine() && sc.peek().equals(Symbol.ENCODED_SHEBANG);
-
-            // iterate through data of current file
-            while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
-               nextLine = sc.nextLine();
-               // truncate line if it exceeds 255 characters
-               if (nextLine.length() > Symbol.MAX_CHARS) {
-                  nextLine = nextLine.substring(0, Symbol.MAX_CHARS - 1);
+            // truncate line if it exceeds 255 characters - used for file names and directories
+            if (currLine.length() >= Symbol.MAX_CHARS) {
+               int lastDotIndex = currLine.lastIndexOf(".");
+               if (currLine.startsWith(Symbol.DIR)) {
+                  currLine = currLine.substring(0, Symbol.MAX_CHARS - 1) + "/";
+               } else {
+                  String extension = currLine.substring(lastDotIndex);
+                  currLine = currLine.substring(0, Symbol.MAX_CHARS - extension.length()) + extension;
                }
-               currFileData.add(nextLine.substring(1));
             }
-            // add the file to allFiles to keep track of it
-            allFiles.add(new InternalFile(currFileName, currFileData, isEncoded));
-         // read a directory
-         } else if (nextLine.startsWith(Symbol.DIR)) {
-            // terminate program if the directory is not formatted correctly
-            if (!nextLine.endsWith("/")) {
-               Driver.exitProgram("The directory " + nextLine.substring(1) + " is not correctly formatted (must end with a \"/\").");
+
+            if (currLine.contains("..")) {
+               Driver.exitProgram("The file " + currLine + " is not correctly formatted (mustn't be named as \"..\").");
+            } else if (currLine.contains("/.") || currLine.contains("/./")) {
+               Driver.exitProgram("The file " + currLine + " is not correctly formatted (mustn't be named as \".\").");
             }
-            // getting here indicates the directory is formatted correctly
-            String currDirName = nextLine.substring(1);
-            allFiles.add(new InternalFile(currDirName));
-         // handle extraneous values
-         } else if (!nextLine.startsWith(Symbol.IGNORE)) {
-            Driver.exitProgram("An unknown file type was found by the compiler (" + nextLine.charAt(0) + ").");
+
+            if (!currLine.startsWith(Symbol.IGNORE) && !(currLine.substring(1)).matches(Symbol.FILENAME_REGEX)) {
+               Driver.exitProgram("An invalid filename was detected.");
+            }
+
+            // read a single file
+            if (currLine.startsWith(Symbol.FILE)) {
+               // title of the file
+               String currFileName = currLine.substring(1);
+               if (currFileName.endsWith("/")) {
+                  Driver.exitProgram("The file " + currFileName + " is not correctly formatted (mustn't end with a \"/\").");
+               }
+
+
+               ArrayList<String> currFileData = new ArrayList<>();
+               boolean isEncoded = sc.hasNextLine() && sc.peek().equals(Symbol.ENCODED_SHEBANG);
+
+               // iterate through data of current file
+               while (sc.hasNextLine() && sc.peek().startsWith(Symbol.DATA)) {
+                  currLine = sc.nextLine();
+                  // truncate line if it exceeds 255 characters
+                  if (currLine.length() > Symbol.MAX_CHARS) {
+                     currLine = currLine.substring(0, Symbol.MAX_CHARS);
+                     reWrite = true;
+                  }
+                  currFileData.add(currLine.substring(1));
+               }
+               // add the file to allFiles to keep track of it
+               allFiles.add(new InternalFile(currFileName, currFileData, isEncoded));
+               // read a directory
+            } else if (currLine.startsWith(Symbol.DIR)) {
+               // terminate program if the directory is not formatted correctly
+               if (!currLine.endsWith("/")) {
+                  Driver.exitProgram("The directory " + currLine.substring(1) + " is not correctly formatted (must end with a \"/\").");
+               }
+               // getting here indicates the directory is formatted correctly
+               String currDirName = currLine.substring(1);
+               allFiles.add(new InternalFile(currDirName));
+               // handle extraneous values
+            } else if (!currLine.startsWith(Symbol.IGNORE)) {
+               Driver.exitProgram("An unknown file type was found by the compiler (" + currLine.charAt(0) + ").");
+            }
          }
+      }
+      if (reWrite) {
+         Functions.rewriteNotesFile();
       }
    }
 
