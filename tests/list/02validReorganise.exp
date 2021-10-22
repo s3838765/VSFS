@@ -1,0 +1,7 @@
+drwxrwxrwx 1 dib dib 512 Oct 21 14:03 dir1/
+drwxrwxrwx 1 dib dib 512 Oct 21 14:03 dir1/dir2/
+-rwxrwxrwx 1 dib dib  34 Oct 21 14:03 dir1/dir2/file1
+-rwxrwxrwx 1 dib dib 121 Oct 21 14:03 dir1/file1
+-rwxrwxrwx 1 dib dib   0 Oct 21 14:03 dir1/file2
+drwxrwxrwx 1 dib dib 512 Oct 21 14:03 dir2/
+-rwxrwxrwx 1 dib dib  35 Oct 21 14:03 dir2/file1
