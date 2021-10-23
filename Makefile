@@ -1,7 +1,7 @@
 CC=
 FLAGS=
-OBJECTS=Driver.class FileSystem.class Functions.class InternalFile.class PeekableScanner.class Symbol.class
-FILES=Driver.java FileSystem.java Functions.java InternalFile.java PeekableScanner.java Symbol.java
+OBJECTS=Driver.class FileSystem.class Functions.class Util.class InternalFile.class PeekableScanner.class Symbol.class
+FILES=Driver.java FileSystem.java Functions.java Util.java InternalFile.java PeekableScanner.java Symbol.java
 TARGET=VSFS.jar
 
 all: $(TARGET)
