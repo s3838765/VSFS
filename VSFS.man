@@ -1,0 +1,74 @@
+.TH VSFS 1 2021-10-24 COSC1114
+
+.SH NAME
+VSFS \- Very Simple File System
+
+.SH SYNOPSIS
+.B VSFS
+[COMMAND] [FS] [OPTION]...
+
+.SH DESCRIPTION
+Execute COMMAND on FS using OPTION(s) as parameters.
+
+VSFS allows you to create a file system within a text file appended with ".notes".
+
+An internal file can be created using "@" followed by the name of a file.
+
+Data for a given file can be added if you insert a line prepended with " " on the lines following a file name.
+
+Directories can be created using "=" followed by the name of the directory.
+
+Comment lines/ignore lines can be created using "#" followed by the text to be ignored.
+
+.TP
+.BR Exit\ Status:
+0 if OK,
+
+1 if error (e.g. specified file does not exist).
+
+
+.SH OPTIONS
+.TP
+.BR FS
+File system; a .notes file that contains the structure of your files and directories.
+.TP
+.BR IF
+Internal file; a file modelled within a .notes file.
+.TP
+.BR EF
+External file; a file that exists on your current operating system.
+.TP
+.BR ID
+Internal directory; a directory modelled within a .notes file.
+
+.SH COMMANDS
+.TP
+list [FS]
+Lists the contents of FS in ls -l format.
+.TP
+copyin [FS] [EF] [IF]
+Copy an existing external file EF into FS as IF.
+.TP
+copyout [FS] [IF] [EF]
+Copy an existing internal file IF out of FS as EF.
+.TP
+mkdir [FS] [ID]
+Create an empty internal directory ID in FS.
+.TP
+rm [FS] [IF]
+Remove internal file IF from FS.
+.TP
+rmdir [FS] [ID]
+Remove internal directory ID from FS.
+.TP
+defrag [FS] 
+Remove all deleted entries of FS and sort into tree-like structure.
+.TP
+index [FS] 
+No implementation required.
+
+.SH BUGS
+No known bugs.
+
+.SH AUTHOR
+Written by Thomas Dib (s3838765).
