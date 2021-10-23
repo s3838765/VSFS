@@ -5,7 +5,7 @@ VSFS \- Very Simple File System
 
 .SH SYNOPSIS
 .B VSFS
-[COMMAND] [FS] [OPTION]...
+COMMAND FS [OPTION]...
 
 .SH DESCRIPTION
 Execute COMMAND on FS using OPTION(s) as parameters.
