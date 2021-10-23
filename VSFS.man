@@ -43,32 +43,58 @@ Internal directory; a directory modelled within a .notes file.
 
 .SH COMMANDS
 .TP
-list [FS]
+.B list [FS]
 Lists the contents of FS in ls -l format.
 .TP
-copyin [FS] [EF] [IF]
+.B copyin [FS] [EF] [IF]
 Copy an existing external file EF into FS as IF.
 .TP
-copyout [FS] [IF] [EF]
+.B copyout [FS] [IF] [EF]
 Copy an existing internal file IF out of FS as EF.
 .TP
-mkdir [FS] [ID]
+.B mkdir [FS] [ID]
 Create an empty internal directory ID in FS.
 .TP
-rm [FS] [IF]
+.B rm [FS] [IF]
 Remove internal file IF from FS.
 .TP
-rmdir [FS] [ID]
+.B rmdir [FS] [ID]
 Remove internal directory ID from FS.
 .TP
-defrag [FS] 
+.B defrag [FS] 
 Remove all deleted entries of FS and sort into tree-like structure.
 .TP
-index [FS] 
+.B index [FS] 
 No implementation required.
+
+.SH EXAMPLES
+.TP
+.B VSFS list genericFile.notes
+Lists the files and directories of genericFile.notes in ls -l format..
+.TP
+.B VSFS copyin genericFile.notes externalFile.txt internalFileName.txt
+Copies the contents of externalFile.txt into genericFile.notes with the name internalFileName.txt.
+.TP
+.B VSFS copyout genericFile.notes internalFileName.txt externalFile.txt
+Copies the contents from internalFileName.txt in genericFile.notes to externalFile.txt.
+.TP
+.B VSFS mkdir genericFile.notes dir1/
+Creates an internal directory dir1/ in genericFile.notes.
+.TP
+.B VSFS rm genericFile.notes existingFile.txt
+Removes (if exists) existingFile.txt from genericFile.notes.
+.TP
+.B VSFS rmdir genericFile.notes dir1/
+Removes an internal directory dir1/ from genericFile.notes.
+.TP
+.B VSFS defrag genericFile.notes
+Removes all ignore ("#") lines from the file and re-organises all files and directories to follow a tree-like structure.
 
 .SH BUGS
 No known bugs.
+
+.SH SEE ALSO
+ls(1), rm(1), mkdir(1), rmdir(1), mv(1), cp(1)
 
 .SH AUTHOR
 Written by Thomas Dib (s3838765).
