@@ -2,10 +2,6 @@
 from pathlib import Path
 import os
 
-RED = '\033[0;31m'
-GREEN = '\033[0;32'
-NC = '\033[0m'
-
 fs = ''
 
 # find and iterate through each directory in path of script
