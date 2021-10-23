@@ -81,6 +81,7 @@ public class FileSystem {
 
             // truncate line if it exceeds 255 characters - used for file names and directories
             if (currLine.length() >= Symbol.MAX_CHARS) {
+               reWrite = true;
                int lastDotIndex = currLine.lastIndexOf(".");
                if (currLine.startsWith(Symbol.DIR)) {
                   currLine = currLine.substring(0, Symbol.MAX_CHARS - 1) + "/";
@@ -187,7 +188,11 @@ public class FileSystem {
             return file;
          }
       }
-      Driver.exitProgram("The provided file was not found.");
+      if (fileName.endsWith("/")) {
+         Driver.exitProgram("The provided directory was not found.");
+      } else {
+         Driver.exitProgram("The provided file was not found.");
+      }
       return null;
    }
 

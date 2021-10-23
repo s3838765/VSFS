@@ -18,7 +18,7 @@ public class Driver {
                func.defrag();
                break;
             case "index":
-               func.index();
+               exitProgram("No implementation required.");
                break;
             default:
                exitProgram("The command you entered was not valid.");

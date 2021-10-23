@@ -71,21 +71,35 @@ public class Functions {
             Driver.exitProgram("The filename you provided was invalid.");
          }
 
+         if (intFileName.endsWith("/")) {
+            Driver.exitProgram("An invalid name was provided for the internal file.");
+         }
+
          // if the external file is a directory - terminate program
          File extFile = new File(extFileName);
-         if (extFile.isDirectory()) {
+         if (!extFile.exists()) {
+            Driver.exitProgram("The provided external file does not exist.");
+         } else if (extFile.isDirectory()) {
             Driver.exitProgram("Copying directories is not supported.");
          }
 
-         // if the file (name) does not exist, add it to the system
-         // this allows you to copy an external file into the internal file system with an alternate name
-         if (!FileSystem.fileExists(intFileName)) {
-            // convert the external file into a File object and then create an InternalFile from it
-            InternalFile intFile = new InternalFile(extFile, intFileName);
-            intFile.addToFileSystem();
-         } else {
-            Driver.exitProgram("This file already exists within the file system.");
+         if (FileSystem.fileExists(intFileName)) {
+            rm(intFileName);
          }
+
+         InternalFile intFile = new InternalFile(extFile, intFileName);
+         intFile.addToFileSystem();
+
+
+//         // if the file (name) does not exist, add it to the system
+//         // this allows you to copy an external file into the internal file system with an alternate name
+//         if (!FileSystem.fileExists(intFileName)) {
+//            // convert the external file into a File object and then create an InternalFile from it
+//            InternalFile intFile = new InternalFile(extFile, intFileName);
+//            intFile.addToFileSystem();
+//         } else {
+//            Driver.exitProgram("This file already exists within the file system.");
+//         }
       } catch (Exception e) {
          e.printStackTrace();
       }
@@ -159,9 +173,6 @@ public class Functions {
     */
    public void rm(String fileName) {
       InternalFile toDelete = FileSystem.getFile(fileName);
-      if (toDelete == null) {
-         Driver.exitProgram("The provided file was not found.");
-      }
       PrintWriter extWriter = null;
       File tempFile = new File(Symbol.TEMP_FILE_NAME);
 
@@ -193,7 +204,6 @@ public class Functions {
             // delete a directory (recursively)
             } else {
                // if the current line begins with the same path
-               // TODO: files that start with this name
                if (currLine.substring(1).startsWith(toDelete.name)) {
                   // check for a file within the directory
                   if (currLine.startsWith(Symbol.FILE)) {
@@ -222,6 +232,7 @@ public class Functions {
          // delete current file system and replace with the temporary file
          FileSystem.fs.delete();
          tempFile.renameTo(FileSystem.fs);
+         FileSystem.out = new PrintWriter(new BufferedWriter(new FileWriter(FileSystem.fs.getPath(), true)));
       } catch (IOException e) {
          System.err.println("There was a problem with opening the file.");
          e.printStackTrace();
@@ -333,7 +344,4 @@ public class Functions {
       }
    }
 
-   public void index() {
-      Driver.exitProgram("No implementation required.");
-   }
 }
