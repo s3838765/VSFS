@@ -1,2 +1,0 @@
-NOTES V1.0
-=This-is-a-very-long-directory-name-that-will-exceed-255-characters-and-it-should-truncate-the-line-at-the-very-end-if-this-works-correctly_abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890_255-characters-is-a-lot-of-characters-for-a-directory-name_the-directory-name-will-be-truncated-and-the-slash-at-the-end-will-stay-present-so-the-file-system-is-not-invalid/

@@ -1,0 +1,5 @@
+NOTES V1.0
+@rmdir/outputErrors/01existingFile
+ This is some file data.
+ It should remain in the file if rmdir is used,
+ because rmdir should only work on directories.

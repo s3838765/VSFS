@@ -1,0 +1,5 @@
+This is the first line of data.
+If all goes well,
+These lines should be transferred over to an external file.
+This external file does not exist,
+but will be created upon copying out this internal file!

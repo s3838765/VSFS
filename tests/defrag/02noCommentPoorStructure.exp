@@ -1,0 +1,19 @@
+NOTES V1.0
+=dir1/
+=dir1/dir2/
+@dir1/dir2/file1
+ This some data
+=dir1/dir3/
+@dir1/file1
+ Some data
+ In this file
+ The next file has no data
+@dir1/file2
+ The previous file lied!
+ I do have data!!!
+=dir2/
+@dir2/file1
+@rootfile1
+ I am a root file
+@rootfile2
+ I am the brother of the other root file

@@ -1,4 +1,4 @@
 NOTES V1.0
 @longFile
- This is a long piece of data contained within a single line of a file. If this single line happens to exceed the max determined length of 255 characters, the line will be truncated. The next lines will remain untouched, assuming they are within the character limit set as 255.
+ This is a long piece of data contained within a single line of a file. If this single line happens to exceed the max determined length of 255 characters, the line will be truncated. The next lines will remain untouched, assuming they are within the character limit that was (once again) specified as 255 characters.
  This is the second (and much shorter) piece of data in this file.

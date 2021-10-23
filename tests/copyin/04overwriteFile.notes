@@ -1,0 +1,6 @@
+NOTES V1.0
+=copyin/
+@copyin/04overwriteFile
+ This file already exists internally!
+ When the copyin command is used...
+ This file will be overwritten :(
