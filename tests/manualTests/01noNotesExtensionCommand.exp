@@ -1,0 +1,4 @@
+drwxrwxrwx 1 dib dib 512 Oct 23 17:06 dir1/
+-rwxrwxrwx 1 dib dib   0 Oct 23 17:06 dir1/filexyz
+-rwxrwxrwx 1 dib dib  22 Oct 23 17:06 file1
+-rwxrwxrwx 1 dib dib  53 Oct 23 17:06 secondfile

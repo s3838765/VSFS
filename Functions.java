@@ -1,18 +1,24 @@
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * Class used to handle file system functions
+ */
 public class Functions {
 
    /**
     * Iteratively call the listFile function on every file and directory in the file system
     */
    public void list() {
-      treeSort();
-      // find size of all files and store in array
+      // sort all files into tree structure
+      Util.treeSort();
+      // find size of all files and store in array - default directories to 512
       Integer[] fileSizes = new Integer[FileSystem.allFiles.size()];
+      Integer[] hardLinks = new Integer[FileSystem.allFiles.size()];
       for (int i = 0; i < fileSizes.length; i++) {
          int fileSize = 0;
          if (!FileSystem.allFiles.get(i).isDir) {
@@ -23,84 +29,94 @@ public class Functions {
             fileSize = 512;
          }
          fileSizes[i] = fileSize;
-      }
 
-      // list each file individually
-      for (int i = 0; i < FileSystem.allFiles.size(); i++) {
-         try {
-            listFile(FileSystem.allFiles.get(i), fileSizes, i);
-         } catch (Exception e) {
-            e.printStackTrace();
+         // calculate number of hard links and store in array
+         hardLinks[i] = 0;
+         for (InternalFile f : FileSystem.allFiles) {
+            if (f.isDir
+                 && f.name.startsWith(FileSystem.allFiles.get(i).name)
+                 && !f.name.equals(FileSystem.allFiles.get(i).name)
+                 && f.name.substring(FileSystem.allFiles.get(i).name.length()).chars().filter(num -> num == '/').count() == 1) {
+               hardLinks[i] += 1;
+            }
+         }
+         // no hard links were found - default to 1
+         if (hardLinks[i] == 0) {
+            hardLinks[i] = 1;
          }
       }
+
+      // list each file
+      FileSystem.allFiles.forEach(file -> {
+         // calculate max file size to adjust width accordingly
+         int maxFileSize = Collections.max(Arrays.asList(fileSizes));
+
+         // format string with variable width for size
+         String format = "%s%s %s %s %s %" + String.valueOf(maxFileSize).length() + "s %s %s%n";
+         try {
+            System.out.printf(format,
+                    file.isDir ? "d" : "-",
+                    PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
+                    hardLinks[FileSystem.allFiles.indexOf(file)],
+                    Files.readAttributes(Paths.get(FileSystem.fs.toURI()), PosixFileAttributes.class).owner().getName(),
+                    Files.readAttributes(Paths.get(FileSystem.fs.toURI()), PosixFileAttributes.class).group().getName(),
+                    fileSizes[FileSystem.allFiles.indexOf(file)],
+                    new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
+                    file.name
+            );
+         } catch (IOException e) {
+            e.printStackTrace();
+         }
+      });
    }
 
    /**
-    * List the attributes of a single file within the internal file system
-    *
-    * @param intFile an internal file stored by the FileSystem class
-    * @throws IOException
-    */
-   private void listFile(InternalFile intFile, Integer[] fileSizes, int currIndex) throws IOException {
-      // calculate max file size to adjust width accordingly
-      int maxFileSize = Collections.max(Arrays.asList(fileSizes));
-
-      // format string with variable width for size
-      String format = "%s%s %s %s %s %" + String.valueOf(maxFileSize).length() + "s %s %s%n";
-      System.out.printf(format,
-              intFile.isDir ? "d" : "-",
-              PosixFilePermissions.toString(Files.getPosixFilePermissions(FileSystem.fs.toPath())),
-              Files.getAttribute(FileSystem.fs.toPath(), "unix:nlink"),
-              Files.getAttribute(FileSystem.fs.toPath(), "unix:uid"),
-              Files.getAttribute(FileSystem.fs.toPath(), "unix:gid"),
-              fileSizes[currIndex],
-              new SimpleDateFormat("MMM dd HH:mm").format(Files.getLastModifiedTime(FileSystem.fs.toPath()).toMillis()),
-              intFile.name
-      );
-   }
-
-   /**
-    * @param extFileName
-    * @param intFileName
+    * Copy a file from external file system into internal file system
+    * @param extFileName name of file on your external (actual) system
+    * @param intFileName name of file to name internally (in .notes file)
     */
    public void copyIn(String extFileName, String intFileName) {
       try {
          // if the provided name was invalid (contains symbols) - terminate program
          if (!intFileName.matches(Symbol.FILENAME_REGEX)) {
-            Driver.exitProgram("The filename you provided was invalid.");
+            Util.exitProgram("The filename you provided was invalid.");
          }
 
-         // if the external file is a directory - terminate program
+         // if the external file does not exist or is a directory - terminate program
          File extFile = new File(extFileName);
-         if (extFile.isDirectory()) {
-            Driver.exitProgram("Copying directories is not supported.");
+         if (!extFile.exists()) {
+            Util.exitProgram("The provided external file does not exist.");
+         } else if (extFile.isDirectory()) {
+            Util.exitProgram("Copying directories is not supported.");
          }
 
-         // if the file (name) does not exist, add it to the system
-         // this allows you to copy an external file into the internal file system with an alternate name
-         if (!FileSystem.fileExists(intFileName)) {
-            // convert the external file into a File object and then create an InternalFile from it
-            InternalFile intFile = new InternalFile(extFile, intFileName);
-            intFile.addToFileSystem();
-         } else {
-            Driver.exitProgram("This file already exists within the file system.");
+         // remove file if it exists within the file system - to be overwritten
+         if (Util.fileExists(intFileName)) {
+            rm(intFileName);
          }
+
+         // add new file to file system
+         InternalFile intFile = new InternalFile(extFile, intFileName);
+         intFile.addToFileSystem();
+
       } catch (Exception e) {
          e.printStackTrace();
       }
 
    }
 
+   /**
+    * Copy a file from internal file system into external file system
+    * @param extFileName name of file on your external (actual) system
+    * @param intFileName name of file to name internally (in .notes file)
+    */
    public void copyOut(String intFileName, String extFileName) {
       try {
-         InternalFile intFile = FileSystem.getFile(intFileName);
-         assert intFile != null;
+         InternalFile intFile = Util.getFile(intFileName);
          if (intFile.isDir) {
-            Driver.exitProgram("Copying directories is not supported.");
+            Util.exitProgram("Copying directories is not supported.");
          }
          File extFile = new File(extFileName);
-         // create file on external system using given file name
-         // iterate each line of data from the file and print it to the external file
 
 
          // file is encoded - decode and write to file
@@ -125,7 +141,6 @@ public class Functions {
             extWriter.close();
          }
 
-
       } catch (Exception e) {
          e.printStackTrace();
       }
@@ -141,13 +156,11 @@ public class Functions {
       if (!dirName.endsWith("/")) {
          dirName += "/";
       }
-      if (!FileSystem.fileExists(dirName)) {
-         FileSystem.recursiveCheckDirs(dirName, 0);
-//         FileSystem.writeLineToFile(Symbol.DIR + dirName);
-//         FileSystem.allFiles.add(new InternalFile(dirName));
-//         System.out.println("Adding " + dirName + " to internal file system.");
+      if (!Util.fileExists(dirName)) {
+         // make full directory path and any subdirectories that do not already exist
+         Util.recursiveCheckDirs(dirName, 0);
       } else {
-         Driver.exitProgram(dirName + " already exists within the file system.");
+         Util.exitProgram(dirName + " already exists within the file system.");
       }
    }
 
@@ -157,11 +170,7 @@ public class Functions {
     * @param fileName name of the internal file/directory to remove
     */
    public void rm(String fileName) {
-      System.out.println("REMOVING FILE " + fileName);
-      InternalFile toDelete = FileSystem.getFile(fileName);
-      if (toDelete == null) {
-         Driver.exitProgram("The provided file was not found.");
-      }
+      InternalFile toDelete = Util.getFile(fileName);
       PrintWriter extWriter = null;
       File tempFile = new File(Symbol.TEMP_FILE_NAME);
 
@@ -193,7 +202,6 @@ public class Functions {
             // delete a directory (recursively)
             } else {
                // if the current line begins with the same path
-               // TODO: files that start with this name
                if (currLine.substring(1).startsWith(toDelete.name)) {
                   // check for a file within the directory
                   if (currLine.startsWith(Symbol.FILE)) {
@@ -205,12 +213,7 @@ public class Functions {
                   }
                   // rewrite the line to include an ignore symbol in front
                   extWriter.println(Symbol.IGNORE + currLine.substring(1));
-//                  String subDir = currLine.substring(currLine.indexOf("/") + 1);
-//                  if (subDir.length() > 0) {
-//                     System.out.println("RECURSIVELY CALLING RM ON " + subDir);
-//                     rm(subDir);
-//                  }
-                  // the currently scanned line is not to be deleted - print it as it currently is
+               // the currently scanned line is not to be deleted - print it as it currently is
                } else {
                   extWriter.println(currLine);
                }
@@ -222,68 +225,11 @@ public class Functions {
          // delete current file system and replace with the temporary file
          FileSystem.fs.delete();
          tempFile.renameTo(FileSystem.fs);
+         FileSystem.out = new PrintWriter(new BufferedWriter(new FileWriter(FileSystem.fs.getPath(), true)));
       } catch (IOException e) {
          System.err.println("There was a problem with opening the file.");
          e.printStackTrace();
       }
-   }
-
-   public void treeSort() {
-      // sort all internal files in reverse alphabetical order
-      FileSystem.allFiles.sort(Comparator.comparing(internalFile -> internalFile.name.toLowerCase()));
-
-      // split all internal files into directories and files (each will end up sorted)
-      ArrayList<InternalFile> allDirs = new ArrayList<>();
-      ArrayList<InternalFile> allFiles = new ArrayList<>();
-      for (InternalFile internalFile : FileSystem.allFiles) {
-         if (internalFile.isDir) {
-            allDirs.add(internalFile);
-         } else {
-            allFiles.add(internalFile);
-         }
-      }
-
-      // new order of internal files
-      ArrayList<InternalFile> newFileStructure = new ArrayList<>();
-
-      // recursively sort each directory
-      for (InternalFile dir : allDirs) {
-         recursiveTreeSort(dir, allDirs, allFiles, newFileStructure);
-      }
-
-      // add any remaining root files (that have not yet been added)
-      for (InternalFile remainingFile : allFiles) {
-         if (!newFileStructure.contains(remainingFile)) {
-            newFileStructure.add(remainingFile);
-         }
-      }
-
-      FileSystem.allFiles = newFileStructure;
-   }
-
-   public void recursiveTreeSort(InternalFile currFile, ArrayList<InternalFile> allDirs,
-                                 ArrayList<InternalFile> allFiles, ArrayList<InternalFile> newFileStructure) {
-      // add current file to new structure
-      if (!newFileStructure.contains(currFile)) {
-         newFileStructure.add(currFile);
-      }
-
-      // find any subdirectories of current file (directory)
-      for (InternalFile subDir : allDirs) {
-         // subdirectory found
-         if (subDir.name.startsWith(currFile.name) && !newFileStructure.contains(subDir)) {
-            newFileStructure.add(subDir);
-            recursiveTreeSort(subDir, allDirs, allFiles, newFileStructure);
-         }
-      }
-      // find any files in current directory
-      for (InternalFile file : allFiles) {
-         // file belongs in current file (current subdirectory)
-         if (file.name.startsWith(currFile.name) && !file.name.substring(currFile.name.length()).contains("/") && !newFileStructure.contains(file)) {
-            newFileStructure.add(file);
-         }
-      }
-
    }
 
    /**
@@ -291,46 +237,8 @@ public class Functions {
     * ignore symbol (#)
     */
    public void defrag() {
-      treeSort();
-      PrintWriter extWriter = null;
-      File tempFile = new File(Symbol.TEMP_FILE_NAME);
-
-      try {
-         // prepare temporary file for writing
-         extWriter = new PrintWriter(new BufferedWriter(new FileWriter(tempFile, true)));
-         extWriter.println(Symbol.HEADER_TAG);
-
-         for (InternalFile file : FileSystem.allFiles) {
-            // print initial prefix for file ("=" for directory, "@" for file)
-            if (file.isDir) {
-               extWriter.print(Symbol.DIR);
-            } else {
-               extWriter.print(Symbol.FILE);
-            }
-
-            // print the name of the file
-            extWriter.println(file.name);
-
-            // print the data of the file
-            if (file.data != null) {
-               for (String s : file.data) {
-                  extWriter.println(Symbol.DATA + s);
-               }
-            }
-         }
-
-         extWriter.flush();
-         extWriter.close();
-         // delete current file system and replace with the temporary file
-         FileSystem.fs.delete();
-         tempFile.renameTo(FileSystem.fs);
-      } catch (IOException e) {
-         System.err.println("There was a problem with opening the file.");
-         e.printStackTrace();
-      }
+      Util.treeSort();
+      Util.rewriteNotesFile();
    }
 
-   public void index() {
-      Driver.exitProgram("No implementation required.");
-   }
 }

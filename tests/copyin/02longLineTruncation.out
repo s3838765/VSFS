@@ -1,0 +1,5 @@
+NOTES V1.0
+=copyin/
+@copyin/02longLineTruncation
+ Hello this is a long line in an external text file. This will be used for testing the copyin functionality for a file system. Copying this file in should truncate this line at 255 characters; the pre-defined maximum. If the line is not long (i.e. not 255
+ This is a shorter line :)

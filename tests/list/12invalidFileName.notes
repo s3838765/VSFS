@@ -1,0 +1,4 @@
+NOTES V1.0
+@invalidfile!
+ This file is invalid.
+ The program should error if this is attempted to be parsed.

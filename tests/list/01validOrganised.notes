@@ -1,0 +1,14 @@
+NOTES V1.0
+=dir1/
+@dir1/file1
+ This is the first file in the first directory.
+ This is some supporting text!
+ The next file in this directory will be empty.
+@dir1/file2
+=dir1/dir2/
+@dir1/dir2/file1
+ I am a file inside a subdirectory!
+=dir2/
+@dir2/file1
+ I am in directory 2!
+ I love it here!

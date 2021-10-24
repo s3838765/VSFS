@@ -1,0 +1,2 @@
+Hello this is a long line in an external text file. This will be used for testing the copyin functionality for a file system. Copying this file in should truncate this line at 255 characters; the pre-defined maximum. If the line is not long (i.e. not 255+ characters), it will not be truncated. The next line will be shorter than 255 characters to demonstrate this.
+This is a shorter line :)

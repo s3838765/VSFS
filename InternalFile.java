@@ -65,18 +65,24 @@ public class InternalFile {
       this.isEncoded = false;
    }
 
+   /**
+    * Encode (or keep as is) data of a given file
+    * @param fileBytes array of all bytes of a data file
+    */
    public void encodeData(byte[] fileBytes) {
       String currLine = "";
       if (this.isEncoded) {
+         // encode data
          String encodedData = Base64.getEncoder().encodeToString(fileBytes);
          int startIndex = 0;
+         // wrap data around every 254 characters
          while (encodedData.substring(startIndex).length() > Symbol.MAX_CHARS-1) {
             this.data.add(encodedData.substring(startIndex, startIndex + Symbol.MAX_CHARS-1));
             startIndex += Symbol.MAX_CHARS-1;
          }
          this.data.add(encodedData.substring(startIndex, encodedData.length()));
-//         this.data.add(Base64.getEncoder().encodeToString(fileBytes));
       } else {
+         // add each byte to current line until a newline is reached
          for (byte b : fileBytes) {
             currLine += (char) b;
             if (((char) b) == '\n') {
@@ -87,40 +93,33 @@ public class InternalFile {
       }
    }
 
-   public void decodeData() {
-   }
-
    /**
     * Add the data of a given internal file to the file system notes file
     */
    public void addToFileSystem() {
-      // print initial prefix for file ("=" for directory, "@" for file, "&" for encoded file)
+      Util.recursiveCheckDirs(this.name, 0);
+      // print initial prefix for file ("=" for directory, "@" for file)
       if (this.isDir) {
-         FileSystem.writeToFile(Symbol.DIR);
+         Util.writeToFile(Symbol.DIR);
       } else {
-         FileSystem.writeToFile(Symbol.FILE);
+         Util.writeToFile(Symbol.FILE);
       }
 
       // print the name of the file
-      FileSystem.writeLineToFile(this.name);
+      Util.writeLineToFile(this.name);
 
       if (this.isEncoded) {
-         FileSystem.writeLineToFile(Symbol.ENCODED_SHEBANG);
+         Util.writeLineToFile(Symbol.ENCODED_SHEBANG);
       }
 
       // print the data of the file (if applicable: a directory will not contain any data)
       for (String s : data) {
          if (this.isEncoded) {
-            FileSystem.writeLineToFile(Symbol.DATA + s);
+            Util.writeLineToFile(Symbol.DATA + s);
          } else {
-            FileSystem.writeToFile(Symbol.DATA + s);
+            Util.writeToFile(Symbol.DATA + s);
          }
       }
+
    }
-
-
-
-
-
-
 }

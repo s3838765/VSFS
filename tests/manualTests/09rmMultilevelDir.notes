@@ -1,0 +1,10 @@
+NOTES V1.0
+=dir1/
+@rootfile1
+ Some data
+=dir1/dir2/
+@dir1/file1
+=dir1/dir2/dir3/
+@dir1/dir2/file3
+@rootfile2
+ Some more file data

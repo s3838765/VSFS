@@ -1,0 +1,8 @@
+NOTES V1.0
+@file1
+ This is some file data
+@secondfile
+ This is the second file data
+ There are two lines here.
+=dir1/
+@dir1/filexyz

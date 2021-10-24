@@ -1,0 +1,100 @@
+.TH VSFS 1 2021-10-24 COSC1114
+
+.SH NAME
+VSFS \- Very Simple File System
+
+.SH SYNOPSIS
+.B VSFS
+COMMAND FS [OPTION]...
+
+.SH DESCRIPTION
+Execute COMMAND on FS using OPTION(s) as parameters.
+
+VSFS allows you to create a file system within a text file appended with ".notes".
+
+An internal file can be created using "@" followed by the name of a file.
+
+Data for a given file can be added if you insert a line prepended with " " on the lines following a file name.
+
+Directories can be created using "=" followed by the name of the directory.
+
+Comment lines/ignore lines can be created using "#" followed by the text to be ignored.
+
+.TP
+.BR Exit\ Status:
+0 if OK,
+
+1 if error (e.g. specified file does not exist).
+
+
+.SH OPTIONS
+.TP
+.BR FS
+File system; a .notes file that contains the structure of your files and directories.
+.TP
+.BR IF
+Internal file; a file modelled within a .notes file.
+.TP
+.BR EF
+External file; a file that exists on your current operating system.
+.TP
+.BR ID
+Internal directory; a directory modelled within a .notes file.
+
+.SH COMMANDS
+.TP
+.B list [FS]
+Lists the contents of FS in ls -l format.
+.TP
+.B copyin [FS] [EF] [IF]
+Copy an existing external file EF into FS as IF.
+.TP
+.B copyout [FS] [IF] [EF]
+Copy an existing internal file IF out of FS as EF.
+.TP
+.B mkdir [FS] [ID]
+Create an empty internal directory ID in FS.
+.TP
+.B rm [FS] [IF]
+Remove internal file IF from FS.
+.TP
+.B rmdir [FS] [ID]
+Remove internal directory ID from FS.
+.TP
+.B defrag [FS] 
+Remove all deleted entries of FS and sort into tree-like structure.
+.TP
+.B index [FS] 
+No implementation required.
+
+.SH EXAMPLES
+.TP
+.B VSFS list genericFile.notes
+Lists the files and directories of genericFile.notes in ls -l format..
+.TP
+.B VSFS copyin genericFile.notes externalFile.txt internalFileName.txt
+Copies the contents of externalFile.txt into genericFile.notes with the name internalFileName.txt.
+.TP
+.B VSFS copyout genericFile.notes internalFileName.txt externalFile.txt
+Copies the contents from internalFileName.txt in genericFile.notes to externalFile.txt.
+.TP
+.B VSFS mkdir genericFile.notes dir1/
+Creates an internal directory dir1/ in genericFile.notes.
+.TP
+.B VSFS rm genericFile.notes existingFile.txt
+Removes (if exists) existingFile.txt from genericFile.notes.
+.TP
+.B VSFS rmdir genericFile.notes dir1/
+Removes an internal directory dir1/ from genericFile.notes.
+.TP
+.B VSFS defrag genericFile.notes
+Removes all ignore ("#") lines from the file and re-organises all files and directories to follow a tree-like structure.
+
+.SH BUGS
+No known bugs.
+
+.SH SEE ALSO
+ls(1), rm(1), mkdir(1), rmdir(1), mv(1), cp(1)
+
+.SH AUTHOR
+Written by Thomas Dib (s3838765).
