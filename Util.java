@@ -1,6 +1,8 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Class containing utility methods for .notes file systems
@@ -201,6 +203,56 @@ public class Util {
       } catch (IOException e) {
          System.err.println("There was a problem with opening the file.");
          e.printStackTrace();
+      }
+   }
+
+
+   public static void decrompressFile(File source) {
+      try {
+         // cut off .gz extension and name as regular notes file
+         File decompressedFile = new File(source.getName().substring(0, source.getName().indexOf(".gz")));
+         GZIPInputStream gis = new GZIPInputStream(new FileInputStream(source));
+         FileOutputStream fos = new FileOutputStream(decompressedFile);
+
+         // read all bytes from compressed file and write them (decompressed) in new file
+         byte[] allBytes = new byte[(int) source.length()];
+         gis.read(allBytes);
+         fos.write(allBytes);
+         fos.close();
+         gis.close();
+
+         // replace compressed (.gz) file with regular notes
+         source.delete();
+         decompressedFile.renameTo(source);
+         FileSystem.fs = decompressedFile;
+      } catch (Exception e) {
+         e.printStackTrace();
+         Util.exitProgram("An error occurred whilst decompressing the file system.");
+      }
+   }
+
+
+   public static void compressFile(File source) {
+      try {
+         // add .gz extension back to notes file
+         File compressedFile = new File(source.getName() + ".gz");
+         FileInputStream fis = new FileInputStream(source);
+         GZIPOutputStream gos = new GZIPOutputStream(new FileOutputStream(compressedFile));
+
+         // write all notes from decompressed file into compressed format
+         byte[] allBytes = new byte[(int) source.length()];
+         fis.read(allBytes);
+         gos.write(allBytes);
+         gos.close();
+         fis.close();
+
+         // rename decompressed file to add .gz
+         source.delete();
+         compressedFile.renameTo(source);
+         FileSystem.fs = compressedFile;
+      } catch (Exception e) {
+         e.printStackTrace();
+         Util.exitProgram("An error occurred whilst compressing the file system.");
       }
    }
 

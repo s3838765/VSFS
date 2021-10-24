@@ -22,6 +22,9 @@ public class FileSystem {
          File fileSystem = null;
          if (fileName.endsWith(".notes")) {
             fileSystem = new File(fileName);
+         } else if (fileName.endsWith(".notes.gz")) {
+            fileSystem = new File(fileName);
+            Util.decrompressFile(fileSystem);
          } else {
             fileSystem = new File(fileName + ".notes");
          }
@@ -36,6 +39,7 @@ public class FileSystem {
 
          // set up scanner for given file system
          sc = new PeekableScanner(fileSystem);
+
          // ensure first line is the correct format (otherwise terminate)
          if (!sc.hasNextLine()) {
             Util.exitProgram("The specified file system is empty.");
@@ -67,7 +71,7 @@ public class FileSystem {
          currLine = sc.nextLine();
 
          // if current line has data - skips over blank lines
-         if (currLine.length() > 0) {
+         if (currLine.trim().length() > 0) {
             // file already exists within the internal file system
             if (Util.fileExists(currLine.substring(1))) {
                Util.exitProgram("A duplicate file (" + currLine.substring(1) + ") was found whilst parsing the file system.");
@@ -154,8 +158,11 @@ public class FileSystem {
    public static void closeFS() {
       try {
          sc.close();
-         out.flush();
          out.close();
+         // compress file if it is required
+         if (fs.getName().endsWith(".gz")) {
+            Util.compressFile(fs);
+         }
       } catch (Exception e) {
          e.printStackTrace();
       }
